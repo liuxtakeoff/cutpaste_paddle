@@ -31,7 +31,7 @@ function func_set_params(){
         echo " "
     elif [[ ${value} = "null" ]] || [[ ${value} = " " ]] || [ ${#value} -le 0 ];then
         echo " "
-    else
+    else 
         echo "${key}=${value}"
     fi
 }
@@ -65,10 +65,10 @@ function status_check(){
     last_status=$1   # the exit code
     run_command=$2
     run_log=$3
-    model_name=$4
     if [ $last_status -eq 0 ]; then
-        echo -e "\033[33m Run successfully with command - ${model_name} - ${run_command}!  \033[0m" | tee -a ${run_log}
+        echo -e "\033[33m Run successfully with command - ${run_command}!  \033[0m" | tee -a ${run_log}
     else
-        echo -e "\033[33m Run failed with command - ${model_name} - ${run_command}!  \033[0m" | tee -a ${run_log}
+        echo -e "\033[33m Run failed with command - ${run_command}!  \033[0m" | tee -a ${run_log}
     fi
 }
+

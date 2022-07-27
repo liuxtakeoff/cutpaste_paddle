@@ -15,18 +15,14 @@ Linux GPU/CPU 基础训练推理测试的主程序为`test_train_inference_pytho
 
 | 算法名称 | 模型名称 | device_CPU | device_GPU | batchsize |
 |  :----:   |  :----: |   :----:   |  :----:  |   :----:   |
-|  CutPaste   |  resnet18_headlayer1 |  支持 | 支持 | 1 |
+|  CutPaste   |  resnet18 |  支持 | 支持 | 1 |
 
 
 ## 2. 测试流程
 
 ### 2.1 准备数据
 
-用于基础训练推理测试的数据位于`test_images/lite_data.tar`，直接解压即可（如果已经解压完成，则无需运行下面的命令）。
-
-```bash
-tar -xf test_images/lite_data.tar
-```
+用于基础训练推理测试的数据位于`lite_data`，直接使用即可。
 
 ### 2.2 准备环境
 
@@ -54,20 +50,20 @@ tar -xf test_images/lite_data.tar
 bash test_tipc/test_train_inference_python.sh ${your_params_file} lite_train_lite_infer
 ```
 
-以`mobilenet_v3_small`的`Linux GPU/CPU 基础训练推理测试`为例，命令如下所示。
+以`resnet18`的`Linux GPU/CPU 基础训练推理测试`为例，命令如下所示。
 
 ```bash
-bash test_tipc/prepare.sh test_tipc/configs/mobilenet_v3_small/train_infer_python.txt lite_train_lite_infer
+bash test_tipc/prepare.sh test_tipc/configs/resnet18/train_infer_python.txt lite_train_lite_infer
 ```
 
 ```bash
-bash test_tipc/test_train_inference_python.sh test_tipc/configs/mobilenet_v3_small/train_infer_python.txt lite_train_lite_infer
+bash test_tipc/test_train_inference_python.sh test_tipc/configs/resnet18/train_infer_python.txt lite_train_lite_infer
 ```
 
 输出结果如下，表示命令运行成功。
 
 ```bash
-Run successfully with command - python3.7 train.py --output-dir=./log/mobilenet_v3_small/lite_train_lite_infer/norm_train_gpus_0 --epochs=5   --batch-size=4!
+ Run successfully with command - python3.7 tools/train.py --type lite --model_dir logs --output=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --epochs=2   --batch_size=1!  
 ......
-Run successfully with command - python3.7 deploy/inference_python/infer.py --use-gpu=False --model-dir=./log/mobilenet_v3_small/lite_train_lite_infer/norm_train_gpus_0,1 --batch-size=1   --benchmark=True > ./log/mobilenet_v3_small/lite_train_lite_infer/python_infer_cpu_batchsize_1.log 2>&1 !
+ Run successfully with command - python3.7 deploy/infer.py --use-gpu=True --model-dir=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --batch-size=1   --benchmark=False > ./log/resnet18/lite_train_lite_infer/python_infer_gpu_batchsize_1.log 2>&1 !  
 ```

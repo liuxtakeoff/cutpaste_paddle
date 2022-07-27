@@ -15,9 +15,12 @@ sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
 from tools.dataset import MVTecAT, Repeat
 from tools.cutpaste import CutPasteNormal, CutPasteScar, CutPaste3Way, CutPasteUnion, cut_paste_collate_fn
 from tools.model import ProjectionNet
-
 import os
-
+import random
+import numpy as np
+paddle.seed(20227)
+np.random.seed(20227)
+random.seed(20227)
 
 def run_training(data_type="bottle",
                  model_dir="logs",
@@ -171,8 +174,7 @@ def run_training(data_type="bottle",
         if epoch % save_interval == 0 and epoch >0:
             paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,
                                                          "%d.pdparams" % epoch))
-    if len(types)==1:
-        paddle.save(model.state_dict(), os.path.join(str(model_dir), "final.pdparams"))
+
     paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,"final.pdparams"))
 
 
@@ -182,7 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--type', default="all",
                         help='MVTec defection dataset type to train seperated by , (default: "all": train all defect types)')
 
-    parser.add_argument('--epochs', default=15000, type=int,
+    parser.add_argument('--epochs', default=256, type=int,
                         help='number of epochs to train the model , (default: 256)')
 
     parser.add_argument('--model_dir', default="logs",
@@ -218,10 +220,9 @@ if __name__ == '__main__':
                         help='use cuda for training (default: False)')
 
     parser.add_argument('--workers', default=0, type=int, help="number of workers to use for data loading (default:8)")
-    parser.add_argument('--save_interval', default=500, type=int, help="number of epochs between each model save (default:1000)")
-
+    parser.add_argument('--save_interval', default=50, type=int, help="number of epochs between each model save (default:1000)")
+    parser.add_argument('--output', default=None, help="no sense")
     args = parser.parse_args()
-    print(args)
     all_types = [
         'bottle',
         'cable',
@@ -242,12 +243,14 @@ if __name__ == '__main__':
 
     if args.type == "all":
         types = all_types
-    else:
+    elif args.type == "lite":
         types = ["bottle"]
+        args.data_dir = "lite_data"
+    print(args)
     variant_map = {'normal': CutPasteNormal, 'scar': CutPasteScar, '3way': CutPaste3Way, 'union': CutPasteUnion}
     variant = variant_map[args.variant]
 
-    device = "cuda" if args.cuda in ["True","1","y"] else "cpu"
+    device = "cuda" if args.cuda in ["True","1","y",True] else "cpu"
     print(f"using device: {device}")
 
     # create modle dir

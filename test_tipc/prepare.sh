@@ -2,10 +2,16 @@
 source test_tipc/common_func.sh
 
 FILENAME=$1
-MODE=$2
 
-# MODE be one of ['lite_train_lite_infer'，'lite_train_whole_infer'
-#                  'whole_train_whole_infer', 'whole_infer']
+# set -xe
+
+:<<!
+MODE be one of ['lite_train_lite_infer' 'lite_train_whole_infer' 'whole_train_whole_infer',
+#                 'whole_infer',
+#                 'cpp_infer', ]
+!
+
+MODE=$2
 
 dataline=$(cat ${FILENAME})
 
@@ -13,102 +19,451 @@ dataline=$(cat ${FILENAME})
 IFS=$'\n'
 lines=(${dataline})
 
+# determine python interpreter version
+python=$(func_parser_value "${lines[2]}")
+
+# install auto-log package.
+${python} -m pip install unrar
+${python} -m pip install https://paddleocr.bj.bcebos.com/libs/auto_log-1.2.0-py3-none-any.whl
+
 # The training params
 model_name=$(func_parser_value "${lines[1]}")
 
-trainer_list=$(func_parser_value "${lines[12]}")
+trainer_list=$(func_parser_value "${lines[14]}")
 
-pip install -r requirements.txt
+
+
+
 if [ ${MODE} = "lite_train_lite_infer" ];then
-    # prepare lite data
-    tar -xf ./test_images/lite_data.tar
-    ln -s ./lite_data/ ./data
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./pretrain_models/ https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_pretrained.pdparams  --no-check-certificate
+    if [ ${model_name} == "PP-TSM" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "PP-TSN" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AGCN" ]; then
+        # pretrain lite train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "STGCN" ]; then
+        # pretrain lite train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "TSM" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSN" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TimeSformer" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/ViT_base_patch16_224_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AttentionLSTM" ]; then
+        pushd data/yt8m
+        ## download & decompression training data
+        wget -nc https://videotag.bj.bcebos.com/Data/yt8m_rawframe_small.tar
+        tar -xf yt8m_rawframe_small.tar
+        ${python} -m pip install tensorflow-gpu==1.14.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+        ${python} tf2pkl.py ./frame ./pkl_frame/
+        ls pkl_frame/train*.pkl > train_small.list # 将train*.pkl的路径写入train_small.list
+        ls pkl_frame/validate*.pkl > val_small.list # 将validate*.pkl的路径写入val_small.list
+
+        ${python} split_yt8m.py train_small.list # 拆分每个train*.pkl变成多个train*_split*.pkl
+        ${python} split_yt8m.py val_small.list # 拆分每个validate*.pkl变成多个validate*_split*.pkl
+
+        ls pkl_frame/train*_split*.pkl > train_small.list # 将train*_split*.pkl的路径重新写入train_small.list
+        ls pkl_frame/validate*_split*.pkl > val_small.list # 将validate*_split*.pkl的路径重新写入val_small.list
+        popd
+    elif [ ${model_name} == "SlowFast" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+    elif [ ${model_name} == "BMN" ]; then
+        # pretrain lite train data
+        pushd ./data
+        mkdir bmn_data
+        cd bmn_data
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/bmn_feat.tar.gz
+        tar -xf bmn_feat.tar.gz
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activitynet_1.3_annotations.json
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activity_net_1_3_new.json
+        popd
+    else
+        echo "Not added into TIPC yet."
     fi
 
 elif [ ${MODE} = "whole_train_whole_infer" ];then
-    tar -xf ../test_images/lite_data.tar
-    # prepare whole data
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./pretrain_models/ https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_pretrained.pdparams  --no-check-certificate
-    fi
+    if [ ${model_name} == "PP-TSM" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        ${python} extract_rawframes.py ./videos/ ./rawframes/ --level 2 --ext mp4 # extract frames from video file
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train_frames.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val_frames.list
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "PP-TSN" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val.list
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AGCN" ]; then
+        # pretrain whole train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "STGCN" ]; then
+        # pretrain whole train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "TSM" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        ${python} extract_rawframes.py ./videos/ ./rawframes/ --level 2 --ext mp4 # extract frames from video file
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train_frames.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val_frames.list
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSN" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        ${python} extract_rawframes.py ./videos/ ./rawframes/ --level 2 --ext mp4 # extract frames from video file
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train_frames.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val_frames.list
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TimeSformer" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val.list
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/ViT_base_patch16_224_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AttentionLSTM" ]; then
+        # pretrain whole train data
+        pushd data/yt8m
+        mkdir frame
+        cd frame
+        ## download & decompression training data
+        curl data.yt8m.org/download.py | partition=2/frame/train mirror=asia python
+        curl data.yt8m.org/download.py | partition=2/frame/validate mirror=asia python
+        ${python} -m pip install tensorflow-gpu==1.14.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+        cd ..
+        ${python} tf2pkl.py ./frame ./pkl_frame/
+        ls pkl_frame/train*.pkl > train.list # 将train*.pkl的路径写入train.list
+        ls pkl_frame/validate*.pkl > val.list # 将validate*.pkl的路径写入val.list
 
-elif [ ${MODE} = "lite_train_whole_infer" ];then
-    tar -xf ../test_images/lite_data.tar
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./pretrain_models/ https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_pretrained.pdparams  --no-check-certificate
-    fi
+        ${python} split_yt8m.py train.list # 拆分每个train*.pkl变成多个train*_split*.pkl
+        ${python} split_yt8m.py val.list # 拆分每个validate*.pkl变成多个validate*_split*.pkl
 
-elif [ ${MODE} = "whole_infer" ];then
-    tar -xf ../test_images/lite_data.tar
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./pretrain_models/ https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_pretrained.pdparams  --no-check-certificate
-    fi
-
-elif [ ${MODE} = "serving_infer" ];then
-    # get data
-    tar -xf ./test_images/lite_data.tar
-    # wget model
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./inference https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_infer.tar  --no-check-certificate
-        cd ./inference && tar xf mobilenet_v3_small_infer.tar && cd ../
-    fi
-elif [ ${MODE} = "cpp_infer" ];then
-    PADDLEInfer=$3
-    # wget model
-    wget -nc -P  ./deploy/inference_cpp/ https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_infer.tar  --no-check-certificate
-    cd ./deploy/inference_cpp/ && tar xf mobilenet_v3_small_infer.tar
-    if [ "" = "$PADDLEInfer" ];then
-        wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.1_cudnn8.1.1_trt7.2.3.4/paddle_inference.tgz --no-check-certificate
+        ls pkl_frame/train*_split*.pkl > train.list # 将train*_split*.pkl的路径重新写入train.list
+        ls pkl_frame/validate*_split*.pkl > val.list # 将validate*_split*.pkl的路径重新写入val.list
+        popd
+    elif [ ${model_name} == "SlowFast" ]; then
+        # pretrain whole train data
+        pushd ./data/k400
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/train_link.list
+        wget -nc https://ai-rank.bj.bcebos.com/Kinetics400/val_link.list
+        bash download_k400_data.sh train_link.list
+        bash download_k400_data.sh val_link.list
+        # download annotations
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/train.list
+        wget -nc https://videotag.bj.bcebos.com/PaddleVideo/Data/Kinetic400/val.list
+        popd
+    elif [ ${model_name} == "BMN" ]; then
+        # pretrain whole train data
+        pushd ./data
+        mkdir bmn_data
+        cd bmn_data
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/bmn_feat.tar.gz
+        tar -xf bmn_feat.tar.gz
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activitynet_1.3_annotations.json
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activity_net_1_3_new.json
+        popd
     else
-        wget -nc $PADDLEInfer --no-check-certificate
+        echo "Not added into TIPC yet."
     fi
-    tar zxf paddle_inference.tgz
-    if [ ! -d "paddle_inference" ]; then
-        ln -s paddle_inference_install_dir paddle_inference
+elif [ ${MODE} = "lite_train_whole_infer" ];then
+    if [ ${model_name} == "PP-TSM" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "PP-TSN" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AGCN" ]; then
+        # pretrain lite train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "STGCN" ]; then
+        # pretrain lite train data
+        pushd data/fsd10
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_data.npy
+        wget -nc https://videotag.bj.bcebos.com/Data/FSD_train_label.npy
+        popd
+    elif [ ${model_name} == "TSM" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSN" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TimeSformer" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/ViT_base_patch16_224_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AttentionLSTM" ]; then
+        # pretrain lite train data
+        pushd data/yt8m
+        ## download & decompression training data
+        wget -nc https://videotag.bj.bcebos.com/Data/yt8m_rawframe_small.tar
+        tar -xf yt8m_rawframe_small.tar
+        ${python} -m pip install tensorflow-gpu==1.14.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+        ${python} tf2pkl.py ./frame ./pkl_frame/
+        ls pkl_frame/train*.pkl > train_small.list # 将train*.pkl的路径写入train_small.list
+        ls pkl_frame/validate*.pkl > val_small.list # 将validate*.pkl的路径写入val_small.list
+
+        ${python} split_yt8m.py train_small.list # 拆分每个train*.pkl变成多个train*_split*.pkl
+        ${python} split_yt8m.py val_small.list # 拆分每个validate*.pkl变成多个validate*_split*.pkl
+
+        ls pkl_frame/train*_split*.pkl > train_small.list # 将train*_split*.pkl的路径重新写入train_small.list
+        ls pkl_frame/validate*_split*.pkl > val_small.list # 将validate*_split*.pkl的路径重新写入val_small.list
+        popd
+    elif [ ${model_name} == "SlowFast" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+    elif [ ${model_name} == "BMN" ]; then
+        # pretrain lite train data
+        pushd ./data
+        mkdir bmn_data
+        cd bmn_data
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/bmn_feat.tar.gz
+        tar -xf bmn_feat.tar.gz
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activitynet_1.3_annotations.json
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activity_net_1_3_new.json
+        popd
+    else
+        echo "Not added into TIPC yet."
     fi
-    wget -nc https://paddleocr.bj.bcebos.com/libs/opencv/opencv-3.4.7.tar.gz --no-check-certificate
-    tar zxf opencv-3.4.7.tar.gz
-    # build opencv
-    cd opencv-3.4.7/
-    root_path=$PWD
-    install_path=${root_path}/opencv3
-    build_dir=${root_path}/build
-
-    rm -rf ${build_dir}
-    mkdir ${build_dir}
-    cd ${build_dir}
-
-    cmake .. \
-    -DCMAKE_INSTALL_PREFIX=${install_path} \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DWITH_IPP=OFF \
-    -DBUILD_IPP_IW=OFF \
-    -DWITH_LAPACK=OFF \
-    -DWITH_EIGEN=OFF \
-    -DCMAKE_INSTALL_LIBDIR=lib64 \
-    -DWITH_ZLIB=ON \
-    -DBUILD_ZLIB=ON \
-    -DWITH_JPEG=ON \
-    -DBUILD_JPEG=ON \
-    -DWITH_PNG=ON \
-    -DBUILD_PNG=ON \
-    -DWITH_TIFF=ON \
-    -DBUILD_TIFF=ON
-    make -j
-    make install
-    cd ../../
-    # build cpp
-    bash tools/build.sh
-
-elif [ ${MODE} = "paddle2onnx_infer" ];then
-    # get data
-    tar -xf ./test_images/lite_data.tar
-    # get model
-    if [[ ${model_name} == "mobilenet_v3_small" ]];then
-        wget -nc -P  ./inference https://paddle-model-ecology.bj.bcebos.com/model/mobilenetv3_reprod/mobilenet_v3_small_infer.tar  --no-check-certificate
-        cd ./inference && tar xf mobilenet_v3_small_infer.tar && cd ../
+elif [ ${MODE} = "whole_infer" ];then
+    if [ ${model_name} = "PP-TSM" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.1/PPTSM/ppTSM_k400_uniform.pdparams --no-check-certificate
+    elif [ ${model_name} = "PP-TSN" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/ppTSN_k400.pdparams --no-check-certificate
+    elif [ ${model_name} == "AGCN" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/AGCN_fsd.pdparams --no-check-certificate
+    elif [ ${model_name} == "STGCN" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/STGCN_fsd.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSM" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.1/TSM/TSM_k400.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSN" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/TSN_k400.pdparams --no-check-certificate
+    elif [ ${model_name} == "TimeSformer" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/TimeSformer_k400.pdparams --no-check-certificate
+    elif [ ${model_name} == "AttentionLSTM" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/AttentionLSTM_yt8.pdparams --no-check-certificate
+    elif [ ${model_name} == "SlowFast" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/SlowFast/SlowFast.pdparams --no-check-certificate
+    elif [ ${model_name} == "BMN" ]; then
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/BMN/BMN.pdparams --no-check-certificate
+    else
+        echo "Not added into TIPC yet."
     fi
+fi
+
+if [ ${MODE} = "benchmark_train" ];then
+    ${python} -m pip install -r requirements.txt
+    if [ ${model_name} == "PP-TSM" ]; then
+        echo "Not added into TIPC yet."
+    elif [ ${model_name} == "PP-TSN" ]; then
+        echo "Not added into TIPC yet."
+    elif [ ${model_name} == "AGCN" ]; then
+        echo "Not added into TIPC yet."
+    elif [ ${model_name} == "STGCN" ]; then
+        echo "Not added into TIPC yet."
+    elif [ ${model_name} == "TSM" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TSN" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_rawframes_small.tar
+        tar -xf k400_rawframes_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_pretrain.pdparams --no-check-certificate
+    elif [ ${model_name} == "TimeSformer" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+        # download pretrained weights
+        wget -nc -P ./data https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/ViT_base_patch16_224_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "AttentionLSTM" ]; then
+        echo "Not added into TIPC yet."
+    elif [ ${model_name} == "SlowFast" ]; then
+        # pretrain lite train data
+        pushd ./data/k400
+        wget -nc https://videotag.bj.bcebos.com/Data/k400_videos_small.tar
+        tar -xf k400_videos_small.tar
+        popd
+    elif [ ${model_name} == "BMN" ]; then
+        # pretrain lite train data
+        pushd ./data
+        mkdir bmn_data
+        cd bmn_data
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/bmn_feat.tar.gz
+        tar -xf bmn_feat.tar.gz
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activitynet_1.3_annotations.json
+        wget -nc https://paddlemodels.bj.bcebos.com/video_detection/activity_net_1_3_new.json
+        popd
+    else
+        echo "Not added into TIPC yet."
+    fi
+fi
+
+if [ ${MODE} = "klquant_whole_infer" ]; then
+    echo "Not added into TIPC now."
+fi
+
+if [ ${MODE} = "cpp_infer" ];then
+    # install required packages
+    apt-get update
+    apt install libavformat-dev
+    apt install libavcodec-dev
+    apt install libswresample-dev
+    apt install libswscale-dev
+    apt install libavutil-dev
+    apt install libsdl1.2-dev
+    apt-get install ffmpeg
+
+    if [ ${model_name} = "PP-TSM" ]; then
+        # download pretrained weights
+        wget -nc -P data/ https://videotag.bj.bcebos.com/PaddleVideo-release2.1/PPTSM/ppTSM_k400_uniform.pdparams --no-check-certificate
+        # export inference model
+        ${python} tools/export_model.py -c configs/recognition/pptsm/pptsm_k400_frames_uniform.yaml -p data/ppTSM_k400_uniform.pdparams -o ./inference/ppTSM
+    elif [ ${model_name} = "PP-TSN" ]; then
+        # download pretrained weights
+        wget -nc -P data/ https://videotag.bj.bcebos.com/PaddleVideo-release2.2/ppTSN_k400.pdparams --no-check-certificate
+        # export inference model
+        ${python} tools/export_model.py -c configs/recognition/pptsn/pptsn_k400_videos.yaml -p data/ppTSN_k400.pdparams -o ./inference/ppTSN
+    else
+        echo "Not added into TIPC now."
+    fi
+fi
+
+if [ ${MODE} = "serving_infer" ];then
+    echo "Not added into TIPC now."
+fi
+
+if [ ${MODE} = "paddle2onnx_infer" ];then
+    echo "Not added into TIPC now."
 fi

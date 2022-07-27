@@ -27,8 +27,8 @@ def get_train_embeds(model, size, defect_type, transform, device="cuda",datadir=
     # train data / train kde
     test_data = MVTecAT(datadir, defect_type, size, transform=transform, mode="train")
 
-    dataloader_train = DataLoader(test_data, batch_size=64,
-                            shuffle=False, num_workers=0)
+    dataloader_train = DataLoader(test_data, batch_size=32,
+                            shuffle=True, num_workers=0)
     train_embed = []
     with paddle.no_grad():
         for x in dataloader_train:
@@ -39,7 +39,7 @@ def get_train_embeds(model, size, defect_type, transform, device="cuda",datadir=
 
 
 def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256, show_training_data=True, model=None,
-               train_embed=None, head_layer=8, density=GaussianDensitySklearn(),data_dir = "Data",args=None):
+               train_embed=None, head_layer=8, density=GaussianDensitySklearn(),data_dir = "Data"):
     # create test dataset
     global test_data_eval, test_transform, cached_type
 
@@ -218,11 +218,13 @@ if __name__ == '__main__':
 
     parser.add_argument('--save_plots', default=False,
                         help='save TSNE and roc plots')
+    parser.add_argument('--pretrained', default=None,
+                        help='no sense')
 
     args = parser.parse_args()
 
     # args = parser.parse_args()
-    print(args)
+    
     all_types = [
                  'bottle',
                  'cable',
@@ -245,9 +247,9 @@ if __name__ == '__main__':
         types = all_types
     else:
         types = ["bottle"]
-    if args.type == "lite":
         args.data_dir = "lite_data"
-    device = "cuda" if args.cuda in ["True","1","y"] else "cpu"
+    print(args)
+    device = "cuda" if args.cuda in ["True","1","y",True] else "cpu"
     save_plots = True if args.save_plots in ["True","1","y"] else False
     density = GaussianDensitySklearn
 
@@ -256,7 +258,7 @@ if __name__ == '__main__':
         print(f"evaluating {data_type}")
         model_name = "%s/%s/final.pdparams"%(args.model_dir,data_type)
         roc_auc = eval_model(model_name, data_type, save_plots=save_plots, device=device,
-                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir,args=args)
+                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir)
         print(f"{data_type} AUC: {roc_auc}")
         obj["defect_type"].append(data_type)
         obj["roc_auc"].append(roc_auc)
