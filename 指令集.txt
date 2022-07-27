@@ -1,0 +1,14 @@
+全量训练及验证：
+python tools/eval.py
+python tools/train.py --epochs 6500 --batch_size 32 --cuda True
+lite_data训练及验证：
+python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained
+python tools/eval.py --data_dir lite_data --type lite --cuda False
+
+预测demo（需要先运行train.py和eval.py）:
+基于代码预测：
+python tools/predict.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+基于引擎预测:
+python deploy/export_model.py
+python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+
