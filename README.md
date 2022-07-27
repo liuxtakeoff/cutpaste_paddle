@@ -71,16 +71,15 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 ### 3.2 准备数据
 
 - 全量数据训练：
-  - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
-  - 运行指令`python train.py --epochs 10000 --batch_size 32`
+  - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集
+  - 将其解压到 **Data** 文件夹下
 - 少量数据训练：
-  - 运行指令`python train.py --types lite_data --data_dir ../lite_data --epochs 5 --batch_size 4`
+  - 无需下载数据集，使用lite_data里的数据即可
 
 
 ### 3.3 准备模型
 
-- 默认使用resnet18预训练模型进行训练，如想关闭：`python train.py --epochs 10000 --batch_size 32 --no-pretrained`
-
+- 默认使用resnet18预训练模型进行训练，如想关闭,需要传入参数：`python train.py --no_pretrained`
 
 ## 4. 开始使用
 
@@ -89,83 +88,67 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 全量数据训练：
   - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
-  - 运行指令`python .\tools\train.py --epochs 10000 --batch_size 32 --cuda True`
+  - 运行指令`python tools/train.py --epochs 6500 --batch_size 32 --cuda True`
 - 少量数据训练：
-  - 运行指令`python train.py --types lite_data --data_dir ../lite_data --epochs 5 --batch_size 4`
+  - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained`
 - 部分训练日志如下所示：
 ```
-> python .\tools\train.py --epochs 10000 --batch_size 32 --cuda True
-Namespace(batch_size=32, cuda='True', data_dir='Data', epochs=10000, freeze_resnet=20, head_layer=1, lr=0.03, model_dir='logs', optim='sgd', pretrained=True, save_interval=500, test_epochs=-1,
-type='all', variant='3way', workers=0)
-using device: cuda
+> python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained
+Namespace(batch_size=4, cuda='False', data_dir='lite_data', epochs=5, freeze_resnet=20, head_layer=1, lr=0.03, model_dir='logs', optim='sgd', pretrained=False, save_interval=500, test_epochs=-1, type='l
+ite', variant='3way', workers=0)
+using device: cpu
 training bottle
 loading images
 loaded 209 images
-epoch:1/10000 loss:1.1202 avg_reader_cost:0.26 avg_batch_cost:2.46 avg_ips:0.08
-epoch:2/10000 loss:0.9271 avg_reader_cost:0.15 avg_batch_cost:1.38 avg_ips:0.04
-epoch:3/10000 loss:0.7945 avg_reader_cost:0.17 avg_batch_cost:1.08 avg_ips:0.03
-epoch:4/10000 loss:0.6116 avg_reader_cost:0.18 avg_batch_cost:0.92 avg_ips:0.03
-epoch:5/10000 loss:0.4354 avg_reader_cost:0.19 avg_batch_cost:0.83 avg_ips:0.03
-...
-
-> python eval.py --density sklearn --cuda 1 --head_layer 2 --save_plots 0| grep AUC
-bottle AUC: 0.9944444444444445
-cable AUC: 0.8549475262368815
+epoch:1/5 loss:1.2578 avg_reader_cost:0.05 avg_batch_cost:3.01 avg_ips:0.75
+epoch:2/5 loss:1.6850 avg_reader_cost:0.02 avg_batch_cost:2.81 avg_ips:0.70
+epoch:3/5 loss:1.5016 avg_reader_cost:0.02 avg_batch_cost:2.75 avg_ips:0.69
 ...
 ``` 
 
 
 ### 4.2 模型评估
 
-- 模型评估：`python eval.py --cuda True`
+- 全量数据模型评估：`python eval.py --cuda True`
+- 少量数据模型评估：`python tools/eval.py --data_dir lite_data --type lite --cuda False`
 ```
-> python .\tools\eval.py --cuda True
-Namespace(cuda='True', data_dir='Data', density='sklearn', head_layer=1, model_dir='logs', save_plots=True, type='all')
+> python tools/eval.py --data_dir lite_data --type lite --cuda False
+Namespace(cuda='False', data_dir='lite_data', density='sklearn', head_layer=1, model_dir='logs', save_plots=True, type='lite')
 evaluating bottle
-loading model logs/bottle/10000.pdparams
+loading model logs/bottle/final.pdparams
 loading images
-loaded 209 images
-[t-SNE] Computing 82 nearest neighbors...
-[t-SNE] Indexed 83 samples in 0.000s...
-[t-SNE] Computed neighbors for 83 samples in 0.002s...
-[t-SNE] Computed conditional probabilities for sample 83 / 83
-[t-SNE] Mean sigma: 0.285641
-[t-SNE] KL divergence after 250 iterations with early exaggeration: 53.737068
-[t-SNE] KL divergence after 500 iterations: 0.308485
+loaded 8 images
 using density estimation GaussianDensitySklearn
-bottle AUC: 0.9746031746031746
-
-evaluating cable
-loading model logs/cable/10000.pdparams
-loading images
-loaded 224 images
-...
+bottle AUC: 0.875
+average auroc:0.8750
 ``` 
 
-### 4.3 模型预测
+### 4.3 模型预测（需要预先完成4.1训练及4.2验证）
 
-- 模型预测：`python predict.py --batch_size 1`
+- 基于原始代码的模型预测：`python tools/predict.py --data_type bottle --img-path images/demo0.png --dist_th 0.5`
+- 基于推理引擎的模型预测：
 ```
-> python train.py --density torch --cuda 1 --head_layer 2 --save_plots 0| grep AUC
-bottle AUC: 0.9944444444444445
-cable AUC: 0.8549475262368815
-...
+python deploy/export_model.py
+python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+```
+部分结果如下：
+```
+> python deploy/export_model.py
+inference model has been saved into deploy
 
-> python eval.py --density sklearn --cuda 1 --head_layer 2 --save_plots 0| grep AUC
-bottle AUC: 0.9944444444444445
-cable AUC: 0.8549475262368815
-...
+> python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+image_name: images/demo0.png, class_id: 0, prob: 0.07689752858017344
 ``` 
 
 
 ## 5. 模型推理部署
 
-如果repo中包含该功能，可以按照Inference推理、Serving服务化部署再细分各个章节，给出具体的使用方法和说明文档。
+模型推理部署详见4.3节-基于推理引擎的模型预测。
 
 
 ## 6. 自动化测试脚本
 
-介绍下tipc的基本使用以及使用链接
+[tipc创建及基本使用方法。](https://github.com/PaddlePaddle/models/blob/release/2.2/tutorials/tipc/train_infer_python/test_train_infer_python.md)
 
 
 ## 7. LICENSE
