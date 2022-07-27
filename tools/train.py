@@ -171,7 +171,8 @@ def run_training(data_type="bottle",
         if epoch % save_interval == 0 and epoch >0:
             paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,
                                                          "%d.pdparams" % epoch))
-
+    if len(types)==1:
+        paddle.save(model.state_dict(), os.path.join(str(model_dir), "final.pdparams"))
     paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,"final.pdparams"))
 
 
@@ -189,7 +190,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', default="Data",
                         help='path of data , (default: Data)')
 
-    parser.add_argument('--no-pretrained', dest='pretrained', default=True, action='store_false',
+    parser.add_argument('--no_pretrained', dest='pretrained', default=True, action='store_false',
                         help='use pretrained values to initalize ResNet18 , (default: True)')
 
     parser.add_argument('--test_epochs', default=-1, type=int,
@@ -223,31 +224,30 @@ if __name__ == '__main__':
     print(args)
     all_types = [
         'bottle',
-        # 'cable',
-        # 'capsule',
-        # 'carpet',
-        # 'grid',
-        # 'hazelnut',
-        # 'leather',
-        # 'metal_nut',
-        # 'pill',
-        # 'screw',
-        # 'tile',
-        # 'toothbrush',
-        # 'transistor',
-        # 'wood',
-        # 'zipper'
+        'cable',
+        'capsule',
+        'carpet',
+        'grid',
+        'hazelnut',
+        'leather',
+        'metal_nut',
+        'pill',
+        'screw',
+        'tile',
+        'toothbrush',
+        'transistor',
+        'wood',
+        'zipper'
         ]
 
     if args.type == "all":
         types = all_types
     else:
         types = ["bottle"]
-
     variant_map = {'normal': CutPasteNormal, 'scar': CutPasteScar, '3way': CutPaste3Way, 'union': CutPasteUnion}
     variant = variant_map[args.variant]
 
-    device = "cuda" if args.cuda else "cpu"
+    device = "cuda" if args.cuda in ["True","1","y"] else "cpu"
     print(f"using device: {device}")
 
     # create modle dir

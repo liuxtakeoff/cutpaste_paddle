@@ -18,6 +18,7 @@ from sklearn.utils import shuffle
 from collections import defaultdict
 from tools.density import GaussianDensitySklearn, GaussianDensityTorch
 import pandas as pd
+import numpy as np
 test_data_eval = None
 test_transform = None
 cached_type = None
@@ -38,7 +39,7 @@ def get_train_embeds(model, size, defect_type, transform, device="cuda",datadir=
 
 
 def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256, show_training_data=True, model=None,
-               train_embed=None, head_layer=8, density=GaussianDensitySklearn(),data_dir = "Data"):
+               train_embed=None, head_layer=8, density=GaussianDensitySklearn(),data_dir = "Data",args=None):
     # create test dataset
     global test_data_eval, test_transform, cached_type
 
@@ -215,7 +216,7 @@ if __name__ == '__main__':
     parser.add_argument('--density', default="sklearn", choices=["torch", "sklearn"],
                         help='density implementation to use. See `density.py` for both implementations. (default: torch)')
 
-    parser.add_argument('--save_plots', default=True,
+    parser.add_argument('--save_plots', default=False,
                         help='save TSNE and roc plots')
 
     args = parser.parse_args()
@@ -228,14 +229,14 @@ if __name__ == '__main__':
                  'capsule',
                  'carpet',
                  'grid',
-                 # 'hazelnut',
-                 # 'leather',
-                 # 'metal_nut',
-                 # 'pill',
-                 # 'screw',
-                 # 'tile',
-                 # 'toothbrush',
-                 # 'transistor',
+                 'hazelnut',
+                 'leather',
+                 'metal_nut',
+                 'pill',
+                 'screw',
+                 'tile',
+                 'toothbrush',
+                 'transistor',
                  'wood',
                  'zipper'
                  ]
@@ -244,23 +245,25 @@ if __name__ == '__main__':
         types = all_types
     else:
         types = ["bottle"]
-
-    device = "cuda" if args.cuda else "cpu"
-
+    if args.type == "lite":
+        args.data_dir = "lite_data"
+    device = "cuda" if args.cuda in ["True","1","y"] else "cpu"
+    save_plots = True if args.save_plots in ["True","1","y"] else False
     density = GaussianDensitySklearn
 
     obj = defaultdict(list)
     for data_type in types:
         print(f"evaluating {data_type}")
-        model_name = "%s/%s/10000.pdparams"%(args.model_dir,data_type)
-        roc_auc = eval_model(model_name, data_type, save_plots=args.save_plots, device=device,
-                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir)
+        model_name = "%s/%s/final.pdparams"%(args.model_dir,data_type)
+        roc_auc = eval_model(model_name, data_type, save_plots=save_plots, device=device,
+                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir,args=args)
         print(f"{data_type} AUC: {roc_auc}")
         obj["defect_type"].append(data_type)
         obj["roc_auc"].append(roc_auc)
+    print("average auroc:%.4f"%np.mean(obj["roc_auc"]))
 
     # save pandas dataframe
-    eval_dir = Path(args.model_dir+"/eval/total")
+    eval_dir = Path(args.model_dir+"/eval")
     eval_dir.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(obj)
-    df.to_csv(str(eval_dir) + "_perf.csv")
+    df.to_csv(str(eval_dir) + "/total_perf.csv")

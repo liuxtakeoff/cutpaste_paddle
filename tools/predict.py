@@ -3,10 +3,15 @@ import argparse
 import PIL.Image as Image
 import pickle
 import paddle
+import os
+import sys
+__dir__ = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
 from tools.model import ProjectionNet
 from paddle.vision import transforms
 from tools.density import GaussianDensitySklearn
 from pathlib import Path
+
 #TODO:集成到一个可以调用的函数里
 def predict_img(model,img_path):
     pass
@@ -16,13 +21,13 @@ if __name__ == '__main__':
                         help=' directory contating models to evaluate (default: models)')
     parser.add_argument('--data_type', default="bottle",
                         help=' type of the input image (default: bottle)')
-    parser.add_argument('--img_path', default="./images/demo.png",
+    parser.add_argument('--img-path', default="./images/demo0.png",
                         help='image size for model infer (default: 256)')
     parser.add_argument('--cuda', default=False,
                         help='use cuda for model predictions (default: False)')
     parser.add_argument('--img_size', default=256,
                         help='image size for model infer (default: 256)')
-    parser.add_argument('--dist_th', default=0.5,
+    parser.add_argument('--dist_th', default=0.5,type=float,
                         help='distance threshold for defect detection (default: 0.5)')
     args = parser.parse_args()
     print(args)
@@ -36,7 +41,7 @@ if __name__ == '__main__':
         print("检测到路径包含小数点，判断为直接模型路径，直接读取模型路径！")
         model_name = args.model_dir
     else:
-        model_name = str(list(Path(args.model_dir).glob(f"model-{args.data_type}*"))[0])
+        model_name = "%s/%s/final.pdparams"%(args.model_dir,args.data_type)
     if model_name == None:
         print("warning: cant find the model for %s"%args.data_type)
     print(f"loading model {model_name}")
@@ -63,6 +68,7 @@ if __name__ == '__main__':
 
     with paddle.no_grad():
         embed,logit = model(img)
+        print(embed.shape,logit.shape)
     embed =paddle.nn.functional.normalize(embed, p=2, axis=1)
     distances = density.predict(embed)
     if distances[0] >= args.dist_th:
