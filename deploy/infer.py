@@ -18,6 +18,9 @@ from paddle import inference
 import numpy as np
 from PIL import Image
 from paddle.vision import transforms
+import sys
+__dir__ = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
 from tools.density import GaussianDensitySklearn
 
 # from preprocess_ops import ResizeImage, CenterCropImage, NormalizeImage, ToCHW, Compose
@@ -118,6 +121,7 @@ class InferenceEngine(object):
         """
         with open(img_path, "rb") as f:
             img = Image.open(f)
+            img = img.resize((self.args.resize_size,self.args.resize_size))
             img = img.convert("RGB")
         img = self.transforms(img)
         img = np.expand_dims(img, axis=0)
@@ -130,7 +134,7 @@ class InferenceEngine(object):
             x: Inference engine output.
         Returns: Output data after argmax.
         """
-        embed,_ = x
+        embed = paddle.to_tensor(x)
         embed = paddle.nn.functional.normalize(embed, p=2, axis=1)
         distances = self.density.predict(embed)
         if distances[0] >= self.args.dist_th:
@@ -167,17 +171,17 @@ def get_args(add_help=True):
         description="PaddlePaddle Classification Training", add_help=add_help)
 
     parser.add_argument(
-        "--model-dir", default=None, help="inference model dir")
+        "--model-dir", default="deploy", help="inference model dir")
     parser.add_argument(
         "--use-gpu", default=False, type=str2bool, help="use_gpu")
     parser.add_argument(
         "--max-batch-size", default=16, type=int, help="max_batch_size")
     parser.add_argument("--batch-size", default=1, type=int, help="batch size")
-    parser.add_argument("--data_type", default="bottle", type=int, help="data type for the model")
+    parser.add_argument("--data_type", default="bottle", help="data type for the model")
     parser.add_argument(
         "--resize-size", default=256, type=int, help="resize_size")
     parser.add_argument("--crop-size", default=256, type=int, help="crop_szie")
-    parser.add_argument("--img-path", default="./images/demo.jpg")
+    parser.add_argument("--img-path", default="images/demo0.png")
     parser.add_argument("--dist_th", default=0.5, type=float, help="distance threthold for defect image")
 
     parser.add_argument(
