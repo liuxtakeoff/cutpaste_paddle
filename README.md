@@ -35,25 +35,26 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 数据集大小：共包含15个物品类别，解压后总大小在4.92G左右
 - 数据集下载链接：[mvtec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/)
+- 训练权重下载链接：[logs](https://pan.baidu.com/s/1t7XA3y8a8w6t8w1pdkuIiA) 提取码：j74i
 # 复现精度（Comparison to Li et al.）
 | defect_type   |    CutPaste (3-way) | Runinho. CutPaste (3-way) | Li et al. CutPaste (3-way) |
 |:--------------|--------------------:|-------------------:|-----------------------------:|
-| bottle        |                98.0 |               99.6 |                         98.3 |
-| cable         |                78.8 |               77.2 |                         80.6 |
-| capsule       |                95.3 |               92.4 |                         96.2 |
-| carpet        |                94.6 |               60.1 |                         93.1 |
-| grid          |                95.5 |              100.0 |                         99.9 |
-| hazelnut      |                96.7 |               86.8 |                         97.3 |
+| bottle        |                97.7 |               99.6 |                         98.3 |
+| cable         |                75.9 |               77.2 |                         80.6 |
+| capsule       |                86.2 |               92.4 |                         96.2 |
+| carpet        |                97.0 |               60.1 |                         93.1 |
+| grid          |                99.7 |              100.0 |                         99.9 |
+| hazelnut      |                92.1 |               86.8 |                         97.3 |
 | leather       |               100.0 |              100.0 |                        100.0 |
-| metal_nut     |                97.9 |               87.8 |                         99.3 |
-| pill          |                85.8 |               91.7 |                         92.4 |
-| screw         |                83.7 |               86.8 |                         86.3 |
-| tile          |                89.4 |               97.2 |                         93.4 |
-| toothbrush    |                96.7 |               94.7 |                         98.3 |
-| transistor    |                91.1 |               93.0 |                         95.5 |
-| wood          |                98.7 |               99.4 |                         98.6 |
-| zipper        |                99.5 |               98.8 |                         99.4 |
-| average       |                93.4 |               91.0 |                         95.2 |
+| metal_nut     |                96.7 |               87.8 |                         99.3 |
+| pill          |                86.2 |               91.7 |                         92.4 |
+| screw         |                78.8 |               86.8 |                         86.3 |
+| tile          |                91.8 |               97.2 |                         93.4 |
+| toothbrush    |                94.7 |               94.7 |                         98.3 |
+| transistor    |                94.1 |               93.0 |                         95.5 |
+| wood          |                96.1 |               99.4 |                         98.6 |
+| zipper        |                95.9 |               98.8 |                         99.4 |
+| average       |                92.2 |               91.0 |                         95.2 |
 
 
 ## 3. 准备数据与环境
