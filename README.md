@@ -87,7 +87,7 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 全量数据训练：
   - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
-  - 运行指令`python tools/train.py --epochs 6500 --batch_size 32 --cuda True`
+  - 运行指令`python tools/train.py --epochs 10000 --batch_size 32 --cuda True`
 - 少量数据训练：
   - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained`
 - 部分训练日志如下所示：
