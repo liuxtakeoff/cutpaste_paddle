@@ -220,7 +220,7 @@ if __name__ == '__main__':
                         help='use cuda for training (default: False)')
 
     parser.add_argument('--workers', default=0, type=int, help="number of workers to use for data loading (default:8)")
-    parser.add_argument('--save_interval', default=50, type=int, help="number of epochs between each model save (default:1000)")
+    parser.add_argument('--save_interval', default=2000, type=int, help="number of epochs between each model save (default:1000)")
     parser.add_argument('--output', default=None, help="no sense")
     args = parser.parse_args()
     all_types = [
