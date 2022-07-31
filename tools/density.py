@@ -12,19 +12,31 @@ class Density(object):
         raise NotImplementedError
 
 
-class GaussianDensityTorch(object):
+class GaussianDensityPaddle(object):
     """Gaussian Density estimation similar to the implementation used by Ripple et al.
     The code of Ripple et al. can be found here: https://github.com/ORippler/gaussian-ad-mvtec.
     """
-
-    def fit(self, embeddings):
+    def load(self,param_path):
+        with open(param_path,"rb") as f:
+            self.params = pickle.load(f)
+            self.min = 0
+            self.max = 1
+    def fit(self, embeddings,param_savepath):
         self.mean = paddle.mean(embeddings, axis=0)
-        self.inv_cov = paddle.to_tensor(LedoitWolf().fit(embeddings.cpu()).precision_, device="cpu",dtype="float32")
+        self.inv_cov = paddle.to_tensor(LedoitWolf().fit(embeddings.cpu()).precision_, place="cpu",dtype="float32")
+        self.params = {"mean": self.mean.cpu().detach().numpy(), "inv_cov": self.inv_cov.cpu().detach().numpy()}
+        with open(param_savepath,"wb") as f:
+            pickle.dump(self.params,f)
+        self.min = None
+        self.max = None
 
     def predict(self, embeddings):
-        distances = self.mahalanobis_distance(embeddings, self.mean, self.inv_cov)
-        return distances
-
+        distances = self.mahalanobis_distance(embeddings, paddle.to_tensor(self.params["mean"]), paddle.to_tensor(self.params["inv_cov"]))
+        if self.min  == None:
+            return distances
+        else:
+            distances = (distances - self.min) / (self.max - self.min + 1e-8)
+            return distances
     @staticmethod
     def mahalanobis_distance(
             values: paddle.Tensor, mean: paddle.Tensor, inv_covariance: paddle.Tensor

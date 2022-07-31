@@ -21,7 +21,7 @@ from paddle.vision import transforms
 import sys
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
-from tools.density import GaussianDensitySklearn
+from tools.density import GaussianDensitySklearn,GaussianDensityPaddle
 
 # from preprocess_ops import ResizeImage, CenterCropImage, NormalizeImage, ToCHW, Compose
 
@@ -103,13 +103,20 @@ class InferenceEngine(object):
         output_names = predictor.get_output_names()
         output_tensor = predictor.get_output_handle(output_names[0])
 
-        #建立类别预测器
-        density = GaussianDensitySklearn()
-        density.load("logs/%s/kde.crf" % (args.data_type))
+        # #建立类别预测器-sklearn
+        # density = GaussianDensitySklearn()
+        # density.load("logs/%s/kde.crf" % (args.data_type))
+
+        # 建立类别预测器-paddle
+        density = GaussianDensityPaddle()
+        density.load("logs/%s/params.crf" % (args.data_type))
+
+        #读取分数归一化参数
         with open("logs/%s/minmaxdist.txt" % (args.data_type), "r") as fd:
             line = fd.readlines()[0].strip().split()
             density.min = float(line[1])
             density.max = float(line[3])
+
         return predictor, config, input_tensor, output_tensor,density
 
     def preprocess(self, img_path):
@@ -143,7 +150,7 @@ class InferenceEngine(object):
         else:
             class_id = 0
             prob = distances[0]
-        return class_id, prob
+        return class_id, prob.cpu().detach().numpy()
 
     def run(self, x):
         """run
@@ -167,25 +174,17 @@ def get_args(add_help=True):
     def str2bool(v):
         return v.lower() in ("true", "t", "1")
 
-    parser = argparse.ArgumentParser(
-        description="PaddlePaddle Classification Training", add_help=add_help)
-
-    parser.add_argument(
-        "--model-dir", default="deploy", help="inference model dir")
-    parser.add_argument(
-        "--use-gpu", default=False, type=str2bool, help="use_gpu")
-    parser.add_argument(
-        "--max-batch-size", default=16, type=int, help="max_batch_size")
+    parser = argparse.ArgumentParser(description="PaddlePaddle Classification Training", add_help=add_help)
+    parser.add_argument("--model-dir", default="deploy", help="inference model dir")
+    parser.add_argument("--use-gpu", default=False, type=str2bool, help="use_gpu")
+    parser.add_argument("--max-batch-size", default=16, type=int, help="max_batch_size")
     parser.add_argument("--batch-size", default=1, type=int, help="batch size")
     parser.add_argument("--data_type", default="bottle", help="data type for the model")
-    parser.add_argument(
-        "--resize-size", default=256, type=int, help="resize_size")
+    parser.add_argument("--resize-size", default=256, type=int, help="resize_size")
     parser.add_argument("--crop-size", default=256, type=int, help="crop_szie")
     parser.add_argument("--img-path", default="images/demo0.png")
     parser.add_argument("--dist_th", default=0.5, type=float, help="distance threthold for defect image")
-
-    parser.add_argument(
-        "--benchmark", default=False, type=str2bool, help="benchmark")
+    parser.add_argument("--benchmark", default=False, type=str2bool, help="benchmark")
     parser.add_argument("--warmup", default=0, type=int, help="warmup iter")
 
     args = parser.parse_args()

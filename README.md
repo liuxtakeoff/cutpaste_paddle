@@ -37,22 +37,22 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 # 复现精度（Comparison to Li et al.）
 | defect_type   |    CutPaste (3-way) | Runinho. CutPaste (3-way) | Li et al. CutPaste (3-way) |
 |:--------------|--------------------:|-------------------:|-----------------------------:|
-| bottle        |                97.7 |               99.6 |                         98.3 |
-| cable         |                75.9 |               77.2 |                         80.6 |
-| capsule       |                86.2 |               92.4 |                         96.2 |
-| carpet        |                97.0 |               60.1 |                         93.1 |
-| grid          |                99.7 |              100.0 |                         99.9 |
-| hazelnut      |                92.1 |               86.8 |                         97.3 |
+| bottle        |                98.5 |               99.6 |                         98.3 |
+| cable         |                79.0 |               77.2 |                         80.6 |
+| capsule       |                91.9 |               92.4 |                         96.2 |
+| carpet        |                95.0 |               60.1 |                         93.1 |
+| grid          |                100.0 |              100.0 |                         99.9 |
+| hazelnut      |                96.9 |               86.8 |                         97.3 |
 | leather       |               100.0 |              100.0 |                        100.0 |
-| metal_nut     |                96.7 |               87.8 |                         99.3 |
-| pill          |                86.2 |               91.7 |                         92.4 |
-| screw         |                78.8 |               86.8 |                         86.3 |
-| tile          |                91.8 |               97.2 |                         93.4 |
-| toothbrush    |                94.7 |               94.7 |                         98.3 |
-| transistor    |                94.1 |               93.0 |                         95.5 |
-| wood          |                96.1 |               99.4 |                         98.6 |
-| zipper        |                95.9 |               98.8 |                         99.4 |
-| average       |                92.2 |               91.0 |                         95.2 |
+| metal_nut     |                96.4 |               87.8 |                         99.3 |
+| pill          |                94.0 |               91.7 |                         92.4 |
+| screw         |                84.3 |               86.8 |                         86.3 |
+| tile          |                90.4 |               97.2 |                         93.4 |
+| toothbrush    |                94.2 |               94.7 |                         98.3 |
+| transistor    |                94.0 |               93.0 |                         95.5 |
+| wood          |                97.8 |               99.4 |                         98.6 |
+| zipper        |                99.1 |               98.8 |                         99.4 |
+| average       |                94.1 |               91.0 |                         95.2 |
 
 
 ## 3. 准备数据与环境
@@ -87,7 +87,7 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 全量数据训练：
   - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
-  - 运行指令`python tools/train.py --epochs 10000 --batch_size 32 --cuda True`
+  - 运行指令`python tools/train.py --epochs 5300 --batch_size 32 --workers 4 --log_interval 200 --save_interval 1000`
 - 少量数据训练：
   - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained`
 - 部分训练日志如下所示：

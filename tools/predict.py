@@ -9,7 +9,7 @@ __dir__ = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
 from tools.model import ProjectionNet
 from paddle.vision import transforms
-from tools.density import GaussianDensitySklearn
+from tools.density import GaussianDensitySklearn,GaussianDensityPaddle
 from pathlib import Path
 
 #TODO:集成到一个可以调用的函数里
@@ -29,10 +29,16 @@ if __name__ == '__main__':
                         help='image size for model infer (default: 256)')
     parser.add_argument('--dist_th', default=0.5,type=float,
                         help='distance threshold for defect detection (default: 0.5)')
+    parser.add_argument('--density', default="paddle", choices=["paddle", "sklearn"],
+                        help='density implementation to use. See `density.py` for both implementations. (default: paddle)')
     args = parser.parse_args()
     print(args)
-    density = GaussianDensitySklearn()
-    density.load("%s/%s/kde.crf"%(args.model_dir,args.data_type))
+    if args.density == "sklearn":
+        density = GaussianDensitySklearn()
+        density.load("%s/%s/kde.crf"%(args.model_dir,args.data_type))
+    else:
+        density = GaussianDensityPaddle()
+        density.load("%s/%s/params.crf" % (args.model_dir, args.data_type))
     with open("%s/%s/minmaxdist.txt"%(args.model_dir,args.data_type),"r") as fd:
         line = fd.readlines()[0].strip().split()
         density.min = float(line[1])
