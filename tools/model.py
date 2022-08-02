@@ -55,13 +55,13 @@ class ProjectionNet(nn.Layer):
     def freeze_resnet(self):
         # freez full resnet18
         for param in self.resnet18.parameters():
-            param.requires_grad = False
+            param.trainable = False
 
         # unfreeze head:
         for param in self.resnet18.fc.parameters():
-            param.requires_grad = True
+            param.trainable = True
 
     def unfreeze(self):
         # unfreeze all:
         for param in self.parameters():
-            param.requires_grad = True
+            param.trainable = True
