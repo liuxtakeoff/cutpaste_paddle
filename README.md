@@ -33,26 +33,26 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 数据集大小：共包含15个物品类别，解压后总大小在4.92G左右
 - 数据集下载链接：[mvtec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/)
-- 训练权重下载链接：[logs](https://pan.baidu.com/s/1t7XA3y8a8w6t8w1pdkuIiA) 提取码：j74i
+- 训练权重下载链接：[logs](链接：https://pan.baidu.com/s/1IvoU2fvxuKnxy_d4twCPrA) (提取码：u6qk)
 # 复现精度（Comparison to Li et al.）
 | defect_type   |    CutPaste (3-way) | Runinho. CutPaste (3-way) | Li et al. CutPaste (3-way) |
 |:--------------|--------------------:|-------------------:|-----------------------------:|
-| bottle        |                98.5 |               99.6 |                         98.3 |
-| cable         |                79.0 |               77.2 |                         80.6 |
-| capsule       |                91.9 |               92.4 |                         96.2 |
-| carpet        |                95.0 |               60.1 |                         93.1 |
-| grid          |                100.0 |              100.0 |                         99.9 |
-| hazelnut      |                96.9 |               86.8 |                         97.3 |
+| bottle        |                90.7 |               99.6 |                         98.3 |
+| cable         |                91.7 |               77.2 |                         80.6 |
+| capsule       |                93.2 |               92.4 |                         96.2 |
+| carpet        |                97.3 |               60.1 |                         93.1 |
+| grid          |               100.0 |              100.0 |                         99.9 |
+| hazelnut      |                99.0 |               86.8 |                         97.3 |
 | leather       |               100.0 |              100.0 |                        100.0 |
-| metal_nut     |                96.4 |               87.8 |                         99.3 |
-| pill          |                94.0 |               91.7 |                         92.4 |
-| screw         |                84.3 |               86.8 |                         86.3 |
-| tile          |                90.4 |               97.2 |                         93.4 |
-| toothbrush    |                94.2 |               94.7 |                         98.3 |
-| transistor    |                94.0 |               93.0 |                         95.5 |
-| wood          |                97.8 |               99.4 |                         98.6 |
-| zipper        |                99.1 |               98.8 |                         99.4 |
-| average       |                94.1 |               91.0 |                         95.2 |
+| metal_nut     |                98.6 |               87.8 |                         99.3 |
+| pill          |                97.3 |               91.7 |                         92.4 |
+| screw         |                88.4 |               86.8 |                         86.3 |
+| tile          |                98.8 |               97.2 |                         93.4 |
+| toothbrush    |                98.6 |               94.7 |                         98.3 |
+| transistor    |                98.7 |               93.0 |                         95.5 |
+| wood          |                99.3 |               99.4 |                         98.6 |
+| zipper        |               100.0 |               98.8 |                         99.4 |
+| average       |                96.7 |               91.0 |                         95.2 |
 
 
 ## 3. 准备数据与环境
@@ -78,7 +78,8 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 ### 3.3 准备模型
 
-- 默认使用resnet18预训练模型进行训练，如想关闭,需要传入参数：`python train.py --no_pretrained`
+- 默认不使用resnet18预训练模型进行训练，如想使用,需要预先下载[预训练权重](https://pan.baidu.com/s/1QJkda31WcaY9ngALvWsGDw 
+) (提取码：l7c3)至项目根目录下并传入参数：`python train.py --pretrained True`
 
 ## 4. 开始使用
 
@@ -87,12 +88,12 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 全量数据训练：
   - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
-  - 运行指令`python tools/train.py --epochs 5300 --batch_size 32 --workers 4 --log_interval 200 --save_interval 1000`
+  - 运行指令`python tools/train.py --epochs 7000 --batch_size 32 --workers 4 --log_interval 10 --pretrained True`
 - 少量数据训练：
-  - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained`
+  - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False`
 - 部分训练日志如下所示：
 ```
-> python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False --no_pretrained
+> python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False
 Namespace(batch_size=4, cuda='False', data_dir='lite_data', epochs=5, freeze_resnet=20, head_layer=1, lr=0.03, model_dir='logs', optim='sgd', pretrained=False, save_interval=500, test_epochs=-1, type='l
 ite', variant='3way', workers=0)
 using device: cpu
@@ -108,8 +109,8 @@ epoch:3/5 loss:1.5016 avg_reader_cost:0.02 avg_batch_cost:2.75 avg_ips:0.69
 
 ### 4.2 模型评估
 
-- 全量数据模型评估：`python eval.py --cuda True`
-- 少量数据模型评估：`python tools/eval.py --data_dir lite_data --type lite --cuda False`
+- 全量数据模型评估：`python eval.py`
+- 少量数据模型评估：`python tools/eval.py --data_dir lite_data --type lite`
 ```
 > python tools/eval.py --data_dir lite_data --type lite --cuda False
 Namespace(cuda='False', data_dir='lite_data', density='sklearn', head_layer=1, model_dir='logs', save_plots=True, type='lite')
@@ -124,18 +125,18 @@ average auroc:0.8750
 
 ### 4.3 模型预测（需要预先完成4.1训练及4.2验证）
 
-- 基于原始代码的模型预测：`python tools/predict.py --data_type bottle --img-path images/demo0.png --dist_th 0.5`
+- 基于原始代码的模型预测：`python tools/predict.py --data_type bottle --img-path images/demo0.png --dist_th 1.0`
 - 基于推理引擎的模型预测：
 ```
 python deploy/export_model.py
-python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 1.0
 ```
 部分结果如下：
 ```
 > python deploy/export_model.py
 inference model has been saved into deploy
 
-> python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 0.5
+> python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 1.0
 image_name: images/demo0.png, class_id: 0, prob: 0.07689752858017344
 ``` 
 
