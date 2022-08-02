@@ -15,10 +15,11 @@ sys.path.append(os.path.abspath(os.path.join(__dir__, '../')))
 from tools.dataset import MVTecAT, Repeat
 from tools.cutpaste import CutPasteNormal, CutPasteScar, CutPaste3Way, CutPasteUnion, cut_paste_collate_fn
 from tools.model import ProjectionNet
+from tools.eval import eval_model
 import os
 import random
 import numpy as np
-seed = 20220731
+seed = 2022952
 paddle.seed(seed)
 np.random.seed(seed)
 random.seed(seed)
@@ -39,6 +40,9 @@ def run_training(data_type="bottle",
                  size=256,
                  save_interval=1000,
                  args = None):
+    #create dir to save wts
+    if not os.path.exists("%s/%s"%(model_dir,data_type)):
+        os.makedirs("%s/%s"%(model_dir,data_type))
     weight_decay = 0.00003
     momentum = 0.9
     # augmentation:
@@ -70,10 +74,10 @@ def run_training(data_type="bottle",
 
     if freeze_resnet > 0 and pretrained:
         model.freeze_resnet()
-
+    model.train()
     loss_fn = paddle.nn.CrossEntropyLoss()
     if optim_name == "sgd":
-        scheduler = CosineAnnealingDecay(learning_rate=learninig_rate, T_max=10000)
+        scheduler = CosineAnnealingDecay(learning_rate=learninig_rate, T_max=epochs)
         optimizer = optim.Momentum(parameters=model.parameters(), learning_rate=scheduler, momentum=momentum,
                                    weight_decay=weight_decay)
         # scheduler = None
@@ -93,11 +97,15 @@ def run_training(data_type="bottle",
     total_loss = 0
     total_reader_cost = 0
     t0 = time.time()
+    max_auroc = 0
+    fdata = open("%s/%s/total_epochs.csv"%(model_dir,data_type),"w")
+    fdata.write("epoch,loss,auroc\n")
     for epoch in range(epochs):
+        #early_stop
+        if max_auroc>=0.9995:break
         if epoch == freeze_resnet:
             model.unfreeze()
 
-        batch_embeds = []
         t1 = time.time()
         batch_idx, data = next(dataloader_inf)
 
@@ -117,20 +125,39 @@ def run_training(data_type="bottle",
         optimizer.step()
         if scheduler is not None:
             scheduler.step()
+        with paddle.no_grad():
+            predicted = paddle.argmax(logits, axis=1)
+            accuracy = paddle.divide(paddle.sum(predicted == y), paddle.to_tensor(predicted.shape[0]))
 
-        predicted = paddle.argmax(logits, axis=1)
+            if test_epochs>0 and (epoch+1)%test_epochs == 0 and epoch>0:
+                batch_embeds = []
+                batch_embeds.append(embeds.cpu().detach())
+                model.eval()
+                roc_auc = eval_model("", data_type, device=device,
+                                     save_plots=False,
+                                     size=size,
+                                     show_training_data=False,
+                                     model=model,
+                                     args = args)
+                fdata.write("%d,%f,%f\n"%(epoch+1,loss,roc_auc))
+                # print("epoch:%d type:%s auroc:%f(%f)"%(epoch,data_type,roc_auc,max_auroc))
+                if roc_auc >= max_auroc:
+                    max_auroc = roc_auc
+                    paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,
+                                                             "final.pdparams"))
+                model.train()
+            if epoch+1 % args.log_interval == 0:
+                total_bacth_cost = time.time() - t0
 
-        accuracy = paddle.divide(paddle.sum(predicted == y), paddle.to_tensor(predicted.shape[0]))
-        if epoch % args.log_interval == 0:
-            total_bacth_cost = time.time() - t0
-
-            print("epoch:%d/%d loss:%.4f acc:%.3f avg_reader_cost:%.3f avg_batch_cost:%.3f avg_ips:%.3f lr:%.6f"%(
-            epoch+1,epochs,loss,accuracy,total_reader_cost/(epoch+1),total_bacth_cost/(epoch+1),total_bacth_cost/(epoch+1)/batch_size,optimizer.get_lr()
-            ))
-        if epoch % save_interval == 0 and epoch >0:
-            paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,
-                                                         "%d.pdparams" % epoch))
-    paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,"final.pdparams"))
+                print("epoch:%d/%d loss:%.4f acc:%.3f avg_reader_cost:%.3f avg_batch_cost:%.3f avg_ips:%.3f lr:%.6f"%(
+                epoch+1,epochs,loss,accuracy,total_reader_cost/(epoch+1),total_bacth_cost/(epoch+1),total_bacth_cost/(epoch+1)/batch_size,optimizer.get_lr()
+                ))
+            # if epoch % save_interval == 0 and epoch >0:
+            #     paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,
+            #                                                  "%d.pdparams" % epoch))
+    fdata.close()
+    if test_epochs<0 or test_epochs >= epochs:
+        paddle.save(model.state_dict(), os.path.join(str(model_dir),data_type,"final.pdparams"))
 
 
 if __name__ == '__main__':
@@ -140,8 +167,8 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', default=256, type=int,help='number of epochs to train the model , (default: 256)')
     parser.add_argument('--model_dir', default="logs",help='output folder of the models , (default: models)')
     parser.add_argument('--data_dir', default="Data",help='path of data , (default: Data)')
-    parser.add_argument('--no_pretrained', dest='pretrained', default=True, action='store_false',help='use pretrained values to initalize ResNet18 , (default: True)')
-    parser.add_argument('--test_epochs', default=-1, type=int,help='interval to calculate the auc during trainig, if -1 do not calculate test scores, (default: 10)')
+    parser.add_argument('--pretrained', default=False, type=bool,help='use pretrained values to initalize ResNet18 , (default: False)')
+    parser.add_argument('--test_epochs', default=50, type=int,help='interval to calculate the auc during trainig, if -1 do not calculate test scores, (default: 10)')
     parser.add_argument('--freeze_resnet', default=20, type=int,help='number of epochs to freeze resnet (default: 20)')
     parser.add_argument('--lr', default=0.03, type=float,help='learning rate (default: 0.03)')
     parser.add_argument('--optim', default="sgd",help='optimizing algorithm values:[sgd, adam] (dafault: "sgd")')
@@ -152,38 +179,40 @@ if __name__ == '__main__':
     parser.add_argument('--workers', default=0, type=int, help="number of workers to use for data loading (default:8)")
     parser.add_argument('--save_interval', default=1000, type=int, help="number of epochs between each model save (default:1000)")
     parser.add_argument('--log_interval', default=1, type=int, help="number of step between each log print (default:1)")
+    parser.add_argument('--density', default="paddle", choices=["paddle", "sklearn"],
+                        help='density implementation to use. See `density.py` for both implementations. (default: paddle)')
     parser.add_argument('--output', default=None, help="no sense")
     args = parser.parse_args()
     all_types = [
-        'bottle',
-        'cable',
-        'capsule',
-        'carpet',
-        'grid',
-        'hazelnut',
-        'leather',
-        'metal_nut',
-        'pill',
-        'screw',
+        # 'bottle',
+        # 'cable',
+        # 'capsule',
+        # 'carpet',
+        # 'grid',
+        # 'hazelnut',
+        # 'leather',
+        # 'metal_nut',
+        # 'pill',
+        # 'screw',
         'tile',
         'toothbrush',
-        'transistor',
-        'wood',
-        'zipper'
+        # 'transistor',
+        # 'wood',
+        # 'zipper'
         ]
 
     if args.type == "all":
         types = all_types
-    elif args.type == "lite":
+    else:
         types = ["bottle"]
         args.data_dir = "lite_data"
     print(args)
     variant_map = {'normal': CutPasteNormal, 'scar': CutPasteScar, '3way': CutPaste3Way, 'union': CutPasteUnion}
     variant = variant_map[args.variant]
 
-    device = "cuda" if args.cuda in ["True","1","y",True] else "cpu"
+    device = "gpu" if args.cuda in ["True","1","y",True] else "cpu"
     print(f"using device: {device}")
-
+    paddle.set_device(device)
     # create modle dir
     Path(args.model_dir).mkdir(exist_ok=True, parents=True)
     # save config.

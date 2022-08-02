@@ -39,7 +39,7 @@ def get_train_embeds(model, size, defect_type, transform, device="cuda",datadir=
 
 
 def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256, show_training_data=False, model=None,
-               train_embed=None, head_layer=8, density=GaussianDensityPaddle(),data_dir = "Data"):
+               train_embed=None, head_layer=8, density=GaussianDensityPaddle(),data_dir = "Data",args=None):
     # create test dataset
     global test_data_eval, test_transform, cached_type
 
@@ -51,7 +51,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
         test_transform.transforms.append(transforms.ToTensor())
         test_transform.transforms.append(transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                               std=[0.229, 0.224, 0.225]))
-        test_data_eval = MVTecAT(data_dir, defect_type, size, transform=test_transform, mode="test")
+        test_data_eval = MVTecAT(args.data_dir, defect_type, size, transform=test_transform, mode="test")
 
     dataloader_test = DataLoader(test_data_eval, batch_size=32,
                                  shuffle=False, num_workers=0)
@@ -81,7 +81,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
     embeds = paddle.concat(embeds)
 
     if train_embed is None:
-        train_embed = get_train_embeds(model, size, defect_type, test_transform, device,datadir=data_dir)
+        train_embed = get_train_embeds(model, size, defect_type, test_transform, device,datadir=args.data_dir)
 
     # norm embeds
     embeds = paddle.nn.functional.normalize(embeds, p=2, axis=1)
@@ -89,18 +89,14 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
 
     # create eval plot dir
     if save_plots:
-        eval_dir = Path("logs") / data_type
+        eval_dir = Path("logs") / defect_type
         eval_dir.mkdir(parents=True, exist_ok=True)
 
         # plot tsne
         # also show some of the training data
         show_training_data = False
         if show_training_data:
-            # augmentation setting
-            # TODO: do all of this in a separate function that we can call in training and evaluation.
-            #       very ugly to just copy the code lol
-            min_scale = 0.5
-
+            min_scale = 1.0
             # create Training Dataset and Dataloader
             after_cutpaste_transform = transforms.Compose([])
             after_cutpaste_transform.transforms.append(transforms.ToTensor())
@@ -113,7 +109,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
             train_transform.transforms.append(CutPaste(transform=after_cutpaste_transform))
             # train_transform.transforms.append(transforms.ToTensor())
 
-            train_data = MVTecAT(data_dir, defect_type, transform=train_transform, size=size)
+            train_data = MVTecAT(args.data_dir, defect_type, transform=train_transform, size=size)
             dataloader_train = DataLoader(train_data, batch_size=32,
                                           shuffle=True, num_workers=4, collate_fn=cut_paste_collate_fn,
                                           persistent_workers=True)
@@ -148,7 +144,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
     else:
         eval_dir = Path("unused")
 
-    print(f"using density estimation {density.__class__.__name__}")
+    # print(f"using density estimation {density.__class__.__name__}")
     # density.fit(train_embed,"logs/%s/kde.crf"%defect_type)
     if args.density == "paddle":
         density.fit(train_embed,"logs/%s/params.crf"%defect_type)
@@ -156,7 +152,7 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
         density.fit(train_embed,"logs/%s/kde.crf"%defect_type)
     distances_train = density.predict(train_embed)
     mind,maxd = min(distances_train),max(distances_train)
-    with open("logs/%s/minmaxdist.txt"%data_type,"w") as f_dist:
+    with open("logs/%s/minmaxdist.txt"%defect_type,"w") as f_dist:
         f_dist.write("min %.6f max %.6f"%(mind,maxd))
     distances = density.predict(embeds)
     distances = (distances-mind)/(maxd-mind+1e-8)
@@ -252,40 +248,13 @@ if __name__ == '__main__':
     # save pandas dataframe
     eval_dir = Path(args.model_dir + "/evalution")
     eval_dir.mkdir(parents=True, exist_ok=True)
-    # #找到最佳的训练批次
-    # max_aveauroc = 0
-    # best_epoch = 0
-    # f = open("%s/evalution/epoch_auroc.txt" %args.model_dir, "w")
-    # for epnum in range(100,10000,100):
-    #     obj = defaultdict(list)
-    #     for data_type in types:
-    #         print(f"evaluating {data_type}")
-    #         model_name = "%s/%s/%d.pdparams" % (args.model_dir, data_type,epnum)
-    #         roc_auc = eval_model(model_name, data_type, save_plots=save_plots, device=device,
-    #                              head_layer=args.head_layer, density=density(), data_dir=args.data_dir)
-    #         print(f"{data_type} AUC: {roc_auc}")
-    #         obj["defect_type"].append(data_type)
-    #         obj["roc_auc"].append(roc_auc)
-    #     ave_auroc = np.mean(obj["roc_auc"])
-    #     obj["defect_type"].append("average")
-    #     obj["roc_auc"].append(ave_auroc)
-    #     print("epoch%d ave_auroc %.5f"%(epnum,ave_auroc))
-    #     if ave_auroc > max_aveauroc:
-    #         df = pd.DataFrame(obj)
-    #         df.to_csv(str(eval_dir) + "/best_perf.csv")
-    #         max_aveauroc = ave_auroc
-    #         best_epoch = epnum
-    #         print("best epoch: %d max auroc: %.5f"%(epnum,ave_auroc))
-    #     f.write("epoch%d ave_auroc %.5f\n"%(epnum,ave_auroc))
-    # f.write("best_epoch%d best_ave_auroc %.5f" % (best_epoch, max_aveauroc))
-    # f.close()
 
     obj = defaultdict(list)
     for data_type in types:
         print(f"evaluating {data_type}")
         model_name = "%s/%s/final.pdparams"%(args.model_dir,data_type)
         roc_auc = eval_model(model_name, data_type, save_plots=save_plots, device=device,
-                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir)
+                             head_layer=args.head_layer, density=density(),data_dir=args.data_dir,args=args)
         print(f"{data_type} AUC: {roc_auc}")
         obj["defect_type"].append(data_type)
         obj["roc_auc"].append(roc_auc)
@@ -295,4 +264,4 @@ if __name__ == '__main__':
     print("average auroc:%.4f"%ave_auroc)
 
     df = pd.DataFrame(obj)
-    df.to_csv(str(eval_dir) + "/total_perf.csv")
+    df.to_csv(str(eval_dir) + "/total_performence.csv")

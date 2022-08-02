@@ -1,0 +1,24 @@
+[2022/08/02 23:44:30] root INFO: result_model: 
+[2022/08/02 23:44:30] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:30] root INFO: diff check passed
+[2022/08/02 23:44:30] root INFO: result_loss: 
+[2022/08/02 23:44:30] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:30] root INFO: diff check passed
+[2022/08/02 23:44:30] root INFO: result_lr: 
+[2022/08/02 23:44:30] root INFO: 	mean diff: check passed: True, value: 2.476298682325858e-19
+[2022/08/02 23:44:30] root INFO: diff check passed
+[2022/08/02 23:44:31] root INFO: loss: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:31] root INFO: lr: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:31] root INFO: diff check passed
+[2022/08/02 23:44:31] root INFO: loss: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.00087738037109375
+[2022/08/02 23:44:31] root INFO: lr: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:31] root INFO: diff check passed
+[2022/08/02 23:44:31] root INFO: loss: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.0007560253143310547
+[2022/08/02 23:44:31] root INFO: lr: 
+[2022/08/02 23:44:31] root INFO: 	mean diff: check passed: True, value: 0.0
+[2022/08/02 23:44:31] root INFO: diff check passed

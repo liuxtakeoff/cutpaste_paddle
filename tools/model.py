@@ -31,7 +31,9 @@ class BatchNorm1D_new(paddle.nn.BatchNorm1D):
 class ProjectionNet(nn.Layer):
     def __init__(self, pretrained=False, head_layers=[512, 512, 512, 512, 512, 512, 512, 512, 128], num_classes=3):
         super(ProjectionNet, self).__init__()
-        self.resnet18 = paddle.vision.models.resnet18(pretrained=pretrained)
+        self.resnet18 = paddle.vision.models.resnet18(pretrained=False)
+        if pretrained:
+            self.resnet18.load_dict(paddle.load("resnet18_pretrianed_paddle.pdparams"))
         last_layer = 512
         sequential_layers = []
         for num_neurons in head_layers:
