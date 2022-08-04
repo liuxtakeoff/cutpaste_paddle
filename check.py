@@ -61,14 +61,14 @@ def check_model():
     data_2 = data_1
     datap = paddle.to_tensor(data_1)
     datat = torch.tensor(data_2)
-    datat = datat.cuda()
+    # datat = datat.cuda()
     head_layer = 1
     head_layers = [512] * head_layer + [128]
     model_pp = net_pp(pretrained=False, head_layers=head_layers, num_classes=3)
-    wt_pp = r"bottle-10000.pdparams"
+    wt_pp = r"wt_paddle.pdparams"
     model_torch = net_torch(pretrained=False, head_layers=head_layers, num_classes=3)
-    model_torch = model_torch.cuda()
-    wt_torch = r"bottle-10000.pth"
+    # model_torch = model_torch.cuda()
+    wt_torch = r"wt_torch.pth"
     model_torch.eval()
     model_pp.eval()
     model_pp.set_dict(paddle.load(wt_pp))
@@ -221,9 +221,9 @@ def check_loss():
     reprod_log_2 = ReprodLogger()
     data_1 = np.random.rand(96, 3).astype(np.float32) #随机生成输出数据
     data_2 = np.random.randint(low=0,high=2,size=96).astype(np.int64) #随机生成标签数据
-    datap = paddle.to_tensor(data_1,place=paddle.CUDAPlace(0))
+    datap = paddle.to_tensor(data_1)
     datat = torch.tensor(data_1)
-    labelp = paddle.to_tensor(data_2,place=paddle.CUDAPlace(0))
+    labelp = paddle.to_tensor(data_2)
     labelt = torch.tensor(data_2)
 
     lossp = loss_pp(datap,labelp)
@@ -319,9 +319,9 @@ def check_backward(model_pp,model_torch,optim_pp,optim_torch,scheduler_pp,schedu
     yp = paddle.arange(3)
     yp = paddle.repeat_interleave(yp, 3,0)
     datat = torch.tensor(data_1)
-    yt = torch.arange(3,device="cuda")
+    yt = torch.arange(3)
     yt = yt.repeat_interleave(3)
-    datat = datat.cuda()
+    # datat = datat.cuda()
 
     #开始反向传播
     model_pp.eval()
@@ -337,6 +337,8 @@ def check_backward(model_pp,model_torch,optim_pp,optim_torch,scheduler_pp,schedu
         #前向推理并获得损失
         embeds_pp,logits_pp = model_pp(datap)
         embeds_torch,logits_torch = model_torch(datat)
+        print("paddle resnet输出：",embeds_pp)
+        print("torch resnet输出：",embeds_torch)
         lossp = loss_pp(logits_pp,yp)
         losst = loss_torch(logits_torch,yt)
         with torch.no_grad():
@@ -398,12 +400,14 @@ def check_backward(model_pp,model_torch,optim_pp,optim_torch,scheduler_pp,schedu
 
 
 if __name__ == '__main__':
+    paddle.set_device("cpu")
     model_pp,model_torch = check_model()
     # loader_pp, loader_torch,transform_pp,transform_torch = check_loader()
     # check_eval(loader_pp, loader_torch,model_pp,model_torch,transform_pp,transform_torch)
     loss_pp,loss_torch = check_loss()
     check_optim(model_pp, model_torch,test=True)
     optim_pp,optim_torch,scheduler_pp,scheduler_torch = check_optim(model_pp, model_torch,test=False)
+    #锁住模型
     model_torch.freeze_resnet()
     model_pp.freeze_resnet()
     check_backward(model_pp, model_torch, optim_pp, optim_torch, scheduler_pp, scheduler_torch,loss_pp,loss_torch)
