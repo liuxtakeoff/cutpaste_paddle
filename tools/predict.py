@@ -1,4 +1,16 @@
-
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import argparse
 import PIL.Image as Image
 import pickle
@@ -12,9 +24,6 @@ from paddle.vision import transforms
 from tools.density import GaussianDensitySklearn,GaussianDensityPaddle
 from pathlib import Path
 
-#TODO:集成到一个可以调用的函数里
-def predict_img(model,img_path):
-    pass
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='infer img')
     parser.add_argument('--model_dir', default="logs",
@@ -33,16 +42,19 @@ if __name__ == '__main__':
                         help='density implementation to use. See `density.py` for both implementations. (default: paddle)')
     args = parser.parse_args()
     print(args)
+    #选择预测器类型，建议选择GaussianDensityPaddle
     if args.density == "sklearn":
         density = GaussianDensitySklearn()
         density.load("%s/%s/kde.crf"%(args.model_dir,args.data_type))
     else:
         density = GaussianDensityPaddle()
         density.load("%s/%s/params.crf" % (args.model_dir, args.data_type))
+    #读取预测器分数范围
     with open("%s/%s/minmaxdist.txt"%(args.model_dir,args.data_type),"r") as fd:
         line = fd.readlines()[0].strip().split()
         density.min = float(line[1])
         density.max = float(line[3])
+    #加载模型权重
     if ".pdparams" in args.model_dir:
         print("检测到路径包含小数点，判断为直接模型路径，直接读取模型路径！")
         model_name = args.model_dir
@@ -53,6 +65,7 @@ if __name__ == '__main__':
     print(f"loading model {model_name}")
     head_layers = [512]*1  + [128]
     weights = paddle.load(str(model_name))
+    #创建模型并加载权重
     classes = 3
     model = ProjectionNet(pretrained=False, head_layers=head_layers, num_classes=classes)
     model.set_dict(weights)
@@ -73,9 +86,12 @@ if __name__ == '__main__':
     # print(img)
 
     with paddle.no_grad():
+        #前向推理
         embed,logit = model(img)
+    #根据推理得到的深度特征，计算距离分数
     embed =paddle.nn.functional.normalize(embed, p=2, axis=1)
     distances = density.predict(embed)
+    #根据距离分数输出预测结果
     if distances[0] >= args.dist_th:
         print("分类结果为：异常！异常分数为：%.4f"%distances[0])
     else:

@@ -90,7 +90,7 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
   - 下载好 [metec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/) 数据集后，将其解压到 **./Data** 文件夹下
   - 运行指令`python tools/train.py --epochs 7000 --batch_size 32 --workers 4 --log_interval 10 --pretrained True`
 - 少量数据训练：
-  - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False`
+  - 运行指令`python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4`
 - 部分训练日志如下所示：
 ```
 > python tools/train.py --data_dir lite_data --type lite --epochs 5 --batch_size 4 --cuda False
@@ -148,6 +148,23 @@ image_name: images/demo0.png, class_id: 0, prob: 0.07689752858017344
 ## 6. 自动化测试脚本
 - tipc创建指南请见[tipc创建及基本使用方法。](https://github.com/PaddlePaddle/models/blob/release/2.2/tutorials/tipc/train_infer_python/test_train_infer_python.md)
 - 本项目TIPC脚本测试命令详见[Linux GPU/CPU 基础训练推理测试](test_tipc/docs/test_train_inference_python.md)
+```bash
+#测试环境准备脚本
+bash test_tipc/prepare.sh test_tipc/configs/resnet18/train_infer_python.txt lite_train_lite_infer
+```
+
+```bash
+#测试训练验证推理一体化脚本
+bash test_tipc/test_train_inference_python.sh test_tipc/configs/resnet18/train_infer_python.txt lite_train_lite_infer
+```
+
+输出结果如下，表示命令运行成功。
+
+```bash
+ Run successfully with command - python3.7 tools/train.py --type lite --model_dir logs --output=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --epochs=2   --batch_size=1!  
+......
+ Run successfully with command - python3.7 deploy/infer.py --use-gpu=True --model-dir=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --batch-size=1   --benchmark=False > ./log/resnet18/lite_train_lite_infer/python_infer_gpu_batchsize_1.log 2>&1 !  
+```
 
 ## 7. LICENSE
 

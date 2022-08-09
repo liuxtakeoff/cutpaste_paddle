@@ -1,3 +1,16 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from sklearn.covariance import LedoitWolf
 from sklearn.neighbors import KernelDensity
 import pickle
@@ -17,24 +30,30 @@ class GaussianDensityPaddle(object):
     The code of Ripple et al. can be found here: https://github.com/ORippler/gaussian-ad-mvtec.
     """
     def load(self,param_path):
+        #加载预测器参数
         with open(param_path,"rb") as f:
             self.params = pickle.load(f)
             self.min = 0
             self.max = 1
     def fit(self, embeddings,param_savepath):
+        #根据输入的深度特征列表，计算预测器参数
         self.mean = paddle.mean(embeddings, axis=0)
         self.inv_cov = paddle.to_tensor(LedoitWolf().fit(embeddings.cpu()).precision_, place="cpu",dtype="float32")
         self.params = {"mean": self.mean.cpu().detach().numpy(), "inv_cov": self.inv_cov.cpu().detach().numpy()}
+        #将计算得到的预测器参数进行保存，以便后续读取
         with open(param_savepath,"wb") as f:
             pickle.dump(self.params,f)
         self.min = None
         self.max = None
 
     def predict(self, embeddings):
+        #调用函数计算深度特征的距离值
         distances = self.mahalanobis_distance(embeddings, paddle.to_tensor(self.params["mean"]), paddle.to_tensor(self.params["inv_cov"]))
         if self.min  == None:
+            # 如果没有读取距离值范围，则直接输出原始距离值
             return distances
         else:
+            #如果输入了距离值范围，则根据范围对距离进行标准化，再输出标准化后距离值
             distances = (distances - self.min) / (self.max - self.min + 1e-8)
             return distances
     @staticmethod

@@ -1,4 +1,16 @@
-
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from sklearn.metrics import roc_curve, auc
 from sklearn.manifold import TSNE
 from paddle.vision import transforms
@@ -237,7 +249,7 @@ if __name__ == '__main__':
                  'wood',
                  'zipper'
                  ]
-    #根据训练模式决定要训练的类别，全量训练对应15种类别，轻量训练则只训练bottle类别
+    #根据验证模式决定要验证的类别，全量验证对应15种类别，轻量验证则只验证bottle类别
     if args.type == "all":
         types = all_types
     else:
@@ -256,6 +268,7 @@ if __name__ == '__main__':
     eval_dir.mkdir(parents=True, exist_ok=True)
     #计算评估指标并保存为字典形式
     obj = defaultdict(list)
+    #遍历每种数据类型进行验证
     for data_type in types:
         print(f"evaluating {data_type}")
         model_name = "%s/%s/final.pdparams"%(args.model_dir,data_type)
