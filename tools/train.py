@@ -43,11 +43,11 @@ def run_training(data_type="bottle",
     #create dir to save wts
     if not os.path.exists("%s/%s"%(model_dir,data_type)):
         os.makedirs("%s/%s"%(model_dir,data_type))
-    weight_decay = 0.00003
-    momentum = 0.9
+    weight_decay = args.weight_decay
+    momentum = args.momentum
     # augmentation:
-    min_scale = 1
-
+    min_scale = args.min_scale
+    hsv_jitter = args.hsv_jitter
     # create Training Dataset and Dataloader
     after_cutpaste_transform = transforms.Compose([])
     after_cutpaste_transform.transforms.append(transforms.ToTensor())
@@ -56,11 +56,9 @@ def run_training(data_type="bottle",
 
     train_transform = transforms.Compose([])
     # train_transform.transforms.append(transforms.RandomResizedCrop(size, scale=(min_scale,1)))
-    train_transform.transforms.append(transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1))
-    # train_transform.transforms.append(transforms.GaussianBlur(int(size/10), sigma=(0.1,2.0)))
+    train_transform.transforms.append(transforms.ColorJitter(brightness=hsv_jitter, contrast=hsv_jitter, saturation=hsv_jitter, hue=hsv_jitter))
     train_transform.transforms.append(transforms.Resize((size, size)))
     train_transform.transforms.append(cutpate_type(transform=after_cutpaste_transform))
-    # train_transform.transforms.append(transforms.ToTensor())
 
     train_data = MVTecAT(args.data_dir, data_type, transform=train_transform, size=int(size * (1 / min_scale)))
     dataloader = DataLoader(Repeat(train_data, 3000), batch_size=batch_size, drop_last=True,
@@ -179,26 +177,30 @@ if __name__ == '__main__':
     parser.add_argument('--workers', default=0, type=int, help="number of workers to use for data loading (default:8)")
     parser.add_argument('--save_interval', default=1000, type=int, help="number of epochs between each model save (default:1000)")
     parser.add_argument('--log_interval', default=1, type=int, help="number of step between each log print (default:1)")
+    parser.add_argument('--weight_decay', default=0.00003, type=float, help="weight decay in optimzer (default:0.00003)")
+    parser.add_argument('--momentum', default=0.9, type=float, help="momentum in optimzer (default:0.9)")
+    parser.add_argument('--min_scale', default=1, type=float, help="min_scale param in data augmentation (default:1)")
+    parser.add_argument('--hsv_jitter', default=0.1, type=float, help="hsv_jitter scale in colorjitter (default:0.1)")
     parser.add_argument('--density', default="paddle", choices=["paddle", "sklearn"],
                         help='density implementation to use. See `density.py` for both implementations. (default: paddle)')
     parser.add_argument('--output', default=None, help="no sense")
     args = parser.parse_args()
     all_types = [
-        # 'bottle',
-        # 'cable',
-        # 'capsule',
-        # 'carpet',
-        # 'grid',
-        # 'hazelnut',
-        # 'leather',
-        # 'metal_nut',
-        # 'pill',
-        # 'screw',
+        'bottle',
+        'cable',
+        'capsule',
+        'carpet',
+        'grid',
+        'hazelnut',
+        'leather',
+        'metal_nut',
+        'pill',
+        'screw',
         'tile',
         'toothbrush',
-        # 'transistor',
-        # 'wood',
-        # 'zipper'
+        'transistor',
+        'wood',
+        'zipper'
         ]
 
     if args.type == "all":
