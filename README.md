@@ -33,7 +33,7 @@ cutpaste是一种简单有效的自监督学习方法，其目标是构建一个
 
 - 数据集大小：共包含15个物品类别，解压后总大小在4.92G左右
 - 数据集下载链接：[mvtec-ad](https://www.mvtec.com/company/research/datasets/mvtec-ad/)
-- 训练权重下载链接：[logs](链接：https://pan.baidu.com/s/1IvoU2fvxuKnxy_d4twCPrA) (提取码：u6qk)
+- 训练权重下载链接：[logs](https://pan.baidu.com/s/1IvoU2fvxuKnxy_d4twCPrA) (提取码：u6qk)
 # 复现精度（Comparison to Li et al.）
 | defect_type   |    CutPaste (3-way) | Runinho. CutPaste (3-way) | Li et al. CutPaste (3-way) |
 |:--------------|--------------------:|-------------------:|-----------------------------:|
