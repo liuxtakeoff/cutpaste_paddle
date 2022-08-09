@@ -40,10 +40,10 @@ def get_train_embeds(model, size, defect_type, transform, device="cuda",datadir=
 
 def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256, show_training_data=False, model=None,
                train_embed=None, head_layer=8, density=GaussianDensityPaddle(),data_dir = "Data",args=None):
-    # create test dataset
+    # 创建全局验证数据，提升验证速度
     global test_data_eval, test_transform, cached_type
 
-    # TODO: cache is only nice during training. do we need it?
+    # 如果类别发生了变化，则更新验证数据集和图像预处理方式
     if test_data_eval is None or cached_type != defect_type:
         cached_type = defect_type
         test_transform = transforms.Compose([])
@@ -52,11 +52,11 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
         test_transform.transforms.append(transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                               std=[0.229, 0.224, 0.225]))
         test_data_eval = MVTecAT(args.data_dir, defect_type, size, transform=test_transform, mode="test")
-
+    #创建数据加载器
     dataloader_test = DataLoader(test_data_eval, batch_size=32,
                                  shuffle=False, num_workers=0)
 
-    # create model
+    # 创建并加载模型
     if model is None:
         print(f"loading model {modelname}")
         head_layers = [512] * head_layer + [128]
@@ -64,36 +64,36 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
         classes = 3
         model = ProjectionNet(pretrained=False, head_layers=head_layers, num_classes=classes)
         model.set_dict(weights)
-        # model.to(device)
         model.eval()
 
-    # get embeddings for test data
+    # 获取深度特征图（embeds）用于计算预测器
     labels = []
     embeds = []
     with paddle.no_grad():
         for x, label in dataloader_test:
             embed, logit = model(x)
 
-            # save
+            # 保存embeds和labels
             embeds.append(embed.cpu())
             labels.append(label.cpu())
     labels = paddle.concat(labels)
     embeds = paddle.concat(embeds)
 
+    #如果没有指定训练集的特征图(train_embed)，则当场计算一次
     if train_embed is None:
         train_embed = get_train_embeds(model, size, defect_type, test_transform, device,datadir=args.data_dir)
 
-    # norm embeds
+    # 分别对训练集和验证集的特征图进行归一化，便于后续计算
     embeds = paddle.nn.functional.normalize(embeds, p=2, axis=1)
     train_embed = paddle.nn.functional.normalize(train_embed, p=2, axis=1)
 
-    # create eval plot dir
+
     if save_plots:
+        # 创建绘制图片保存文件夹
         eval_dir = Path("logs") / defect_type
         eval_dir.mkdir(parents=True, exist_ok=True)
 
-        # plot tsne
-        # also show some of the training data
+        # 决定是否需要输出数据增强效果，建议不要开
         show_training_data = False
         if show_training_data:
             min_scale = 1.0
@@ -144,19 +144,22 @@ def eval_model(modelname, defect_type, device="cpu", save_plots=False, size=256,
     else:
         eval_dir = Path("unused")
 
-    # print(f"using density estimation {density.__class__.__name__}")
-    # density.fit(train_embed,"logs/%s/kde.crf"%defect_type)
+
+    #利用训练集计算分数分布，作为最终预测器
     if args.density == "paddle":
         density.fit(train_embed,"logs/%s/params.crf"%defect_type)
     else:
         density.fit(train_embed,"logs/%s/kde.crf"%defect_type)
+    #计算训练集上的分数分布，确定正常分数范围（因为训练集全是正常值，他的范围可以视为正常范围）
     distances_train = density.predict(train_embed)
     mind,maxd = min(distances_train),max(distances_train)
+    #将正常分数范围保存下来
     with open("logs/%s/minmaxdist.txt"%defect_type,"w") as f_dist:
         f_dist.write("min %.6f max %.6f"%(mind,maxd))
+    #计算验证集分数
     distances = density.predict(embeds)
     distances = (distances-mind)/(maxd-mind+1e-8)
-    # TODO: set threshold on mahalanobis distances and use "real" probabilities
+    #根据预测分数计算auroc值
     roc_auc = plot_roc(labels, distances, eval_dir / "roc_plot.png", modelname=modelname, save_plots=save_plots)
     return roc_auc
 
@@ -165,7 +168,7 @@ def plot_roc(labels, scores, filename, modelname="", save_plots=False):
     fpr, tpr, _ = roc_curve(labels, scores)
     roc_auc = auc(fpr, tpr)
 
-    # plot roc
+    # 绘制图片
     if save_plots:
         plt.figure()
         lw = 2
@@ -234,27 +237,32 @@ if __name__ == '__main__':
                  'wood',
                  'zipper'
                  ]
-
+    #根据训练模式决定要训练的类别，全量训练对应15种类别，轻量训练则只训练bottle类别
     if args.type == "all":
         types = all_types
     else:
         types = ["bottle"]
         args.data_dir = "lite_data"
+    #决定是否使用gpu
     device = "cuda" if args.cuda in ["True","1","y",True] else "cpu"
+    #决定是否输出相关性图片，建议是不要开
     save_plots = True if args.save_plots in ["True","1","y"] else False
+    #决定使用的预测分类器，最好使用 GaussianDensityPaddle
     density = GaussianDensitySklearn if args.density == "sklearn" else GaussianDensityPaddle
     print(args)
 
-    # save pandas dataframe
+    # 定义评估结果的保存地址
     eval_dir = Path(args.model_dir + "/evalution")
     eval_dir.mkdir(parents=True, exist_ok=True)
-
+    #计算评估指标并保存为字典形式
     obj = defaultdict(list)
     for data_type in types:
         print(f"evaluating {data_type}")
         model_name = "%s/%s/final.pdparams"%(args.model_dir,data_type)
+        #调用函数计算auroc
         roc_auc = eval_model(model_name, data_type, save_plots=save_plots, device=device,
                              head_layer=args.head_layer, density=density(),data_dir=args.data_dir,args=args)
+        #输出并保存评估结果
         print(f"{data_type} AUC: {roc_auc}")
         obj["defect_type"].append(data_type)
         obj["roc_auc"].append(roc_auc)
@@ -262,6 +270,6 @@ if __name__ == '__main__':
     obj["defect_type"].append("average")
     obj["roc_auc"].append(ave_auroc)
     print("average auroc:%.4f"%ave_auroc)
-
+    #将评估结果保存为csv文件
     df = pd.DataFrame(obj)
     df.to_csv(str(eval_dir) + "/total_performence.csv")
