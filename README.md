@@ -148,7 +148,8 @@ image_name: images/demo0.png, class_id: 0, prob: 0.07689752858017344
 ## 6. 自动化测试脚本
 
 [tipc创建及基本使用方法。](https://github.com/PaddlePaddle/models/blob/release/2.2/tutorials/tipc/train_infer_python/test_train_infer_python.md)
-
+- 基础训练预测测试：
+    - TIPC脚本测试命令详见[Linux GPU/CPU 基础训练推理测试](test_tipc/docs/test_train_inference_python.md)
 
 ## 7. LICENSE
 
