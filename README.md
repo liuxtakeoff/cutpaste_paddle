@@ -126,6 +126,10 @@ average auroc:0.8750
 ### 4.3 模型预测（需要预先完成4.1训练及4.2验证）
 
 - 基于原始代码的模型预测：`python tools/predict.py --data_type bottle --img-path images/demo0.png --dist_th 1.0`
+
+
+## 5. 模型推理部署
+
 - 基于推理引擎的模型预测：
 ```
 python deploy/export_model.py
@@ -139,11 +143,6 @@ inference model has been saved into deploy
 > python deploy/infer.py --data_type bottle --img-path images/demo0.png --dist_th 1.0
 image_name: images/demo0.png, class_id: 0, prob: 0.07689752858017344
 ``` 
-
-
-## 5. 模型推理部署
-
-模型推理部署详见4.3节-基于推理引擎的模型预测。
 
 
 ## 6. 自动化测试脚本
