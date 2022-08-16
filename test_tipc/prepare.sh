@@ -43,6 +43,8 @@ if [ ${MODE} = "lite_train_lite_infer" ];then
         popd
         # download pretrained weights
         wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "resnet18" ]; then
+        echo "successfully prepared resnet18!"
     elif [ ${model_name} == "PP-TSN" ]; then
         # pretrain lite train data
         pushd ./data/k400
@@ -138,6 +140,8 @@ elif [ ${MODE} = "whole_train_whole_infer" ];then
         popd
         # download pretrained weights
         wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "resnet18" ]; then
+        echo "successfully prepared resnet18!"
     elif [ ${model_name} == "PP-TSN" ]; then
         # pretrain whole train data
         pushd ./data/k400
@@ -257,6 +261,8 @@ elif [ ${MODE} = "lite_train_whole_infer" ];then
         popd
         # download pretrained weights
         wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo/PretrainModel/ResNet50_vd_ssld_v2_pretrained.pdparams --no-check-certificate
+    elif [ ${model_name} == "resnet18" ]; then
+        echo "successfully prepared resnet18!"
     elif [ ${model_name} == "PP-TSN" ]; then
         # pretrain lite train data
         pushd ./data/k400
@@ -341,6 +347,8 @@ elif [ ${MODE} = "whole_infer" ];then
     if [ ${model_name} = "PP-TSM" ]; then
         # download pretrained weights
         wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.1/PPTSM/ppTSM_k400_uniform.pdparams --no-check-certificate
+    elif [ ${model_name} == "resnet18" ]; then
+        echo "successfully prepared resnet18!"
     elif [ ${model_name} = "PP-TSN" ]; then
         # download pretrained weights
         wget -nc -P ./data https://videotag.bj.bcebos.com/PaddleVideo-release2.2/ppTSN_k400.pdparams --no-check-certificate
