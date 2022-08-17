@@ -37,7 +37,7 @@ def get_args(add_help=True):
     parser.add_argument('--img_size', default=256, help='image size to export')
     parser.add_argument(
         '--save-inference-dir', default='deploy', help='path where to save')
-    parser.add_argument('--pretrained', default=None, help='pretrained model')
+    parser.add_argument('--pretrained', default=False, help='pretrained model')
     parser.add_argument('--num_classes', default=3,type=int, help='num_classes')
 
     args = parser.parse_args()
