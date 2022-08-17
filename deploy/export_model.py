@@ -48,6 +48,7 @@ def export(args):
     # model = paddlevision.models.__dict__[args.model](
     #     pretrained=args.pretrained, num_classes=args.num_classes)
     head_layers = [512] * args.headlayer + [128]
+    args.pretrained = True if args.pretrained in ["True","true",True] else False
     model = ProjectionNet(pretrained=args.pretrained, head_layers=head_layers, num_classes=args.num_classes)
     # model = nn.Sequential(model, nn.Softmax())
     model.eval()
