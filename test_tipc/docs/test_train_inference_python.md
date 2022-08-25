@@ -63,7 +63,13 @@ bash test_tipc/test_train_inference_python.sh test_tipc/configs/resnet18/train_i
 输出结果如下，表示命令运行成功。
 
 ```bash
- Run successfully with command - python3.7 tools/train.py --type lite --model_dir logs --output=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --epochs=2   --batch_size=1!  
+ Run successfully with command - python3.7 tools/train.py --type lite --model_dir logs --output=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --epochs=2   --batch_size=1!
+......
+ Run successfully with command - python3.7 tools/eval.py --type lite --pretrained=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0/final.pdparams! 
+......
+ Run successfully with command - python3.7 deploy/export_model.py  --pretrained=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0/final.pdparams --save-inference-dir=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0!
 ......
  Run successfully with command - python3.7 deploy/infer.py --use-gpu=True --model-dir=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --batch-size=1   --benchmark=False > ./log/resnet18/lite_train_lite_infer/python_infer_gpu_batchsize_1.log 2>&1 !  
+......
+ Run successfully with command - python3.7 deploy/infer.py --use-gpu=False --model-dir=./log/resnet18/lite_train_lite_infer/norm_train_gpus_0 --batch-size=1   --benchmark=False > ./log/resnet18/lite_train_lite_infer/python_infer_cpu_batchsize_1.log 2>&1 !  
 ```
