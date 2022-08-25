@@ -25,7 +25,7 @@ train_model:logs/bottle/final.pdparams
 infer_export:deploy/export_model.py --data_type bottle 
 ##
 inference:deploy/infer.py
---use-gpu:True
+--use-gpu:True|False
 --batch-size:1
 --model-dir:deploy
 --img-path:images/demo0
